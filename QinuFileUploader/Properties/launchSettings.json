@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "QinuFileUploader (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "QinuFileUploader (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
