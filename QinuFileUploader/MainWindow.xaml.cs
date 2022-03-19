@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using QinuFileUploader.Model;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -31,5 +32,15 @@ namespace QinuFileUploader
             this.MainFrame.DataContext = Ioc.Default.GetRequiredService<MenuPageViewModel>();
         }
 
+        private void TreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
+        {
+            (this.MainFrame.DataContext as MenuPageViewModel).CurrentExplorerItem = (ExplorerItem)args.InvokedItem;
+        }
+
+        private void BasicGridView_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            (this.MainFrame.DataContext as MenuPageViewModel).SelectedFileInfo = (IFileInfo)e.ClickedItem;
+
+        }
     }
 }

@@ -30,6 +30,8 @@ namespace Workshop.ViewModel
         public MenuPageViewModel(IQiniuManager qiniuManager)
         {
             this.qiniuManager = qiniuManager;
+            this.PropertyChanged += MenuPageViewModel_PropertyChanged;
+
             this.SearchCommand = new RelayCommand<string>(SearchAction);
             this.AddImageCommand = new RelayCommand(AddImageAction);
             this.RemoveImageCommand = new RelayCommand<IFileInfo>(RemoveImageAction);
@@ -37,6 +39,22 @@ namespace Workshop.ViewModel
 
         }
 
+        private void MenuPageViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(CurrentExplorerItem))
+            {
+                if (string.IsNullOrEmpty(this.CurrentExplorerItem.Path))
+                {
+                    return;
+                }
+                var targetPath = Path.GetDirectoryName(this.CurrentExplorerItem.Path+'/');
+                this.CurrentFileInfos = new ObservableCollection<IFileInfo>(this.FileInfos.Where(c =>
+                {
+                    var result = Path.GetDirectoryName(c.FileName) == targetPath;
+                    return result;
+                }));
+            }
+        }
 
         private void SearchAction(string keyword)
         {
@@ -50,47 +68,111 @@ namespace Workshop.ViewModel
             await Bucket(storageSK);
             var fgalleryList = await qiniuManager.Search(qiniuManager.Bucket, keyword);
 
-
             var folders = fgalleryList.Where(c => c.IsFolder).GroupBy(c => c.FileName).Select(c => c.Key).ToList();
 
+            ExplorerItem root = null;
             foreach (var folder in folders)
             {
-                var pathArray = folder.Split('/');
+                var trimdFolder = folder;
+                if (folder.EndsWith('/'))
+                {
+                    trimdFolder = folder.Substring(0, folder.Length - 1);
+                }
+                var pathArray = trimdFolder.Split('/');
+
+                void b(ref ExplorerItem current, int index)
+                {
+                    if (index == pathArray.Length - 1)
+                    {
+                        return;
+                    }
+
+                    var name = pathArray[index + 1];
+
+                    var next = current.Children.FirstOrDefault(c => c.Name == name);
+                    if (next == null)
+                    {
+                        var path = string.Join("/", pathArray);
+
+                        var currentExplorerItem = new ExplorerItem()
+                        {
+                            Name = pathArray[pathArray.Length - 1],
+                            Type = ExplorerItem.ExplorerItemType.Folder,
+                            Path = path
+                        };
+                        var appendItem = a(currentExplorerItem, pathArray.Length - 2, index);
+                        current.Children.Add(appendItem);
+                        return;
+                    }
+                    b(ref next, index + 1);
+
+                }
+
+                ExplorerItem a(ExplorerItem ex, int index, int stopIndex = 0)
+                {
+                    if (index == stopIndex)
+                    {
+                        return ex;
+                    }
+                    var children = new ObservableCollection<ExplorerItem>();
+                    children.Add(ex);
+                    var path = string.Join("/", pathArray, 0, index + 1);
+
+                    var e = new ExplorerItem()
+                    {
+                        Name = pathArray[index],
+                        Path = path,
+                        Type = ExplorerItem.ExplorerItemType.Folder,
+                        Children = children
+                    };
+                    return a(e, index - 1);
+                }
                 if (pathArray.Any())
                 {
-                    foreach (var path in pathArray)
+                    if (root == null)
                     {
-                        var e = new ExplorerItem()
+                        root = new ExplorerItem()
                         {
-                            Name = path,
+                            Name = pathArray[0],
                             Type = ExplorerItem.ExplorerItemType.Folder,
-                            Children = new ObservableCollection<ExplorerItem>()
-
+                            Path = pathArray[0]
                         };
                     }
+                    b(ref root, 0);
+
                 }
             }
 
-            this.FileInfos = new ObservableCollection<IFileInfo>(fgalleryList.Select(c => c));
+            this.RootExplorerItems = new ObservableCollection<ExplorerItem>() { root };
+
+            this.FileInfos = new ObservableCollection<IFileInfo>(fgalleryList.Where(c => !c.IsFolder));
+
+            FileInfos.CollectionChanged += FileInfos_CollectionChangedAsync;
+            this.CurrentExplorerItem = RootExplorerItems.FirstOrDefault();
         }
 
-        public ExplorerItem a(ExplorerItem ex)
+        private async Task FileInfos_CollectionChangedAsync(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var children = new ObservableCollection<ExplorerItem>();
 
-            children.Add(ex);
-
-            var e = new ExplorerItem()
+            switch (e.Action)
             {
-                Name = path,
-                Type = ExplorerItem.ExplorerItemType.Folder,
-                Children = children
-            };
-
-            return a(e);
+                case NotifyCollectionChangedAction.Add:
+                    break;
+                case NotifyCollectionChangedAction.Remove:
+                    break;
+                case NotifyCollectionChangedAction.Replace:
+                    break;
+                case NotifyCollectionChangedAction.Move:
+                    break;
+                case NotifyCollectionChangedAction.Reset:
+                    break;
+                default:
+                    break;
+            }
+            qiniuManager.Delete()
+            !await MenuManager.DeleteMenu(e.OldItems[0] as Menu)
+            throw new NotImplementedException();
         }
-
-
 
         private void RemoveImageAction(IFileInfo obj)
         {
@@ -176,17 +258,68 @@ namespace Workshop.ViewModel
             qiniuManager.Bucket = bucketList.First();
         }
 
-        private ObservableCollection<IFileInfo> _candidateFilePathList;
+        private ObservableCollection<IFileInfo> _fileInfos;
 
         public ObservableCollection<IFileInfo> FileInfos
         {
-            get { return _candidateFilePathList; }
+            get { return _fileInfos; }
             set
             {
-                _candidateFilePathList = value;
+                _fileInfos = value;
                 OnPropertyChanged(nameof(FileInfos));
             }
         }
+
+        private ObservableCollection<IFileInfo> _currentFileInfos;
+
+        public ObservableCollection<IFileInfo> CurrentFileInfos
+        {
+            get { return _currentFileInfos; }
+            set
+            {
+                _currentFileInfos = value;
+                OnPropertyChanged(nameof(CurrentFileInfos));
+            }
+        }
+
+        private IFileInfo _selectedFileInfo;
+
+        public IFileInfo SelectedFileInfo
+        {
+            get { return _selectedFileInfo; }
+            set
+            {
+                _selectedFileInfo = value;
+                OnPropertyChanged(nameof(SelectedFileInfo));
+            }
+        }
+
+        private ObservableCollection<ExplorerItem> _rootExplorerItem;
+
+        public ObservableCollection<ExplorerItem> RootExplorerItems
+        {
+            get { return _rootExplorerItem; }
+            set
+            {
+                _rootExplorerItem = value;
+                OnPropertyChanged(nameof(RootExplorerItems));
+            }
+        }
+
+        private ExplorerItem _currentExplorerItem;
+
+        public ExplorerItem CurrentExplorerItem
+        {
+            get { return _currentExplorerItem; }
+            set
+            {
+                _currentExplorerItem = value;
+                OnPropertyChanged(nameof(CurrentExplorerItem));
+
+            }
+        }
+
+
 
         private string _keyWord;
 

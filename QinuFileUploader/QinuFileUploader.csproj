@@ -12,6 +12,7 @@
     <EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
   </PropertyGroup>
   <ItemGroup>
+    <Content Remove="Assets\folder.png" />
     <Content Remove="Assets\imageLoad.png" />
   </ItemGroup>
 

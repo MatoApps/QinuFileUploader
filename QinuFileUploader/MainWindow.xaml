@@ -5,9 +5,10 @@
     xmlns:local="using:QinuFileUploader"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    
-    
+    xmlns:common="using:QinuFileUploader.Common" 
+    xmlns:model="using:QinuFileUploader.Model"
     mc:Ignorable="d">
+
 
     <Grid Name="MainFrame">
         <Grid.RowDefinitions>
@@ -21,8 +22,35 @@
                 <ColumnDefinition></ColumnDefinition>
             </Grid.ColumnDefinitions>
 
-        </Grid>
+            <TreeView ItemsSource="{Binding RootExplorerItems}" SelectedItem="{Binding CurrentExplorerItem}"
+                   ItemInvoked="TreeView_ItemInvoked"
+                      SelectionMode="Single" 
+                      >
+                <TreeView.ItemTemplate>
+                    <DataTemplate
+                      x:DataType="model:ExplorerItem">
+                        <TreeViewItem AutomationProperties.Name="{Binding Name}"
+                ItemsSource="{Binding Children}" IsExpanded="True" >
 
+                            <StackPanel Orientation="Horizontal">
+                                <Image Width="20" Source="../Assets/folder.png"/>
+                                <TextBlock Margin="0,0,10,0"/>
+                                <TextBlock Text="{Binding Name}" />
+                            </StackPanel>
+                        </TreeViewItem>
+                    </DataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+
+            <StackPanel Grid.Column="1">
+                <TextBlock Text="{Binding SelectedFileInfo.FileName}"></TextBlock>
+                <TextBlock Text="{Binding SelectedFileInfo.FileType}"></TextBlock>
+                <TextBlock Text="{Binding SelectedFileInfo.FileSize}"></TextBlock>
+                <TextBlock Text="{Binding SelectedFileInfo.CreateDate}"></TextBlock>
+                <TextBlock Text="{Binding SelectedFileInfo.Path}"></TextBlock>
+            </StackPanel>
+
+        </Grid>
         <Grid  Margin="0,10" Width="420" Grid.Row="1" 
 				   HorizontalAlignment="Left" 
 				   VerticalAlignment="Bottom">
@@ -47,14 +75,17 @@
             <Button Grid.Column="2" Content="查询" Command="{Binding SearchCommand}" Margin="10" Width="120"></Button>
 
         </Grid>
-        <GridView
+        <GridView Grid.Row="2"
             x:Name="BasicGridView"
             IsItemClickEnabled="True"
-            ItemsSource="{Binding FileInfos}"
+            ItemsSource="{Binding CurrentFileInfos}"
+                 
+              SelectedItem="{Binding SelectedFileInfo}"
+                  ItemClick="BasicGridView_ItemClick"
             SelectionMode="Single">
             <GridView.ItemTemplate>
                 <DataTemplate>
-                    <Image Source="{Binding}" Width="90" Height="90" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Image Source="{Binding Path}" Width="90" Height="90" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </DataTemplate>
             </GridView.ItemTemplate>
         </GridView>
