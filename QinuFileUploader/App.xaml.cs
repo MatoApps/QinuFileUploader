@@ -53,6 +53,9 @@ namespace QinuFileUploader
             m_window.Activate();
         }
 
-        private Window m_window;
+        //https://docs.microsoft.com/zh-cn/windows/apps/windows-app-sdk/migrate-to-windows-app-sdk/guides/winui3#contentdialog-and-popup
+        private static Window m_window;
+
+        public static Window Window { get { return m_window; } }
     }
 }

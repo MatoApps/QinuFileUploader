@@ -293,7 +293,7 @@ namespace Workshop.Service.Manager
                             }
 
                         }
-                        await MessageBox.ShowAsync(string.IsNullOrWhiteSpace(rresult.ToString()) ? "下载结束！" : rresult.ToString());
+                        await UIHelper.ShowAsync(string.IsNullOrWhiteSpace(rresult.ToString()) ? "下载结束！" : rresult.ToString());
                     }
                     else
                     {

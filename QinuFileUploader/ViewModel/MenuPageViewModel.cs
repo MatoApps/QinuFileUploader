@@ -24,6 +24,7 @@ namespace Workshop.ViewModel
         private readonly IQiniuManager qiniuManager;
 
         public RelayCommand<string> SearchCommand { get; private set; }
+        public RelayCommand RefreshCommand { get; private set; }
         public RelayCommand AddImageCommand { get; }
         public RelayCommand<IFileInfo> RemoveImageCommand { get; private set; }
 
@@ -33,32 +34,53 @@ namespace Workshop.ViewModel
             this.PropertyChanged += MenuPageViewModel_PropertyChanged;
 
             this.SearchCommand = new RelayCommand<string>(SearchAction);
+            this.RefreshCommand = new RelayCommand(RefreshAction);
             this.AddImageCommand = new RelayCommand(AddImageAction);
             this.RemoveImageCommand = new RelayCommand<IFileInfo>(RemoveImageAction);
+            this.KeyWord = "";
             InitData();
 
+        }
+
+        private void RefreshAction()
+        {
+            InitData();
         }
 
         private void MenuPageViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(CurrentExplorerItem))
             {
-                if (string.IsNullOrEmpty(this.CurrentExplorerItem.Path))
+                if (this.CurrentExplorerItem == null || string.IsNullOrEmpty(this.CurrentExplorerItem.Path))
                 {
                     return;
                 }
-                var targetPath = Path.GetDirectoryName(this.CurrentExplorerItem.Path+'/');
-                this.CurrentFileInfos = new ObservableCollection<IFileInfo>(this.FileInfos.Where(c =>
-                {
-                    var result = Path.GetDirectoryName(c.FileName) == targetPath;
-                    return result;
-                }));
+                RefreshCurrentFileInfosAsync();
             }
+
+        }
+
+        private async Task RefreshCurrentFileInfosAsync(string keyword = "")
+        {
+
+
+            var targetPath = this.CurrentExplorerItem.Path + '/' + keyword;
+            var targetDirectoryPath = Path.GetDirectoryName(this.CurrentExplorerItem.Path + '/');
+
+            var fileInfos = await qiniuManager.Search(qiniuManager.Bucket, targetPath);
+            var currentFileInfos = new ObservableCollection<IFileInfo>(fileInfos.Where(c => !c.IsFolder).Where(c =>
+            {
+                var result = Path.GetDirectoryName(c.FileName) == targetDirectoryPath;
+                return result;
+            }));
+            currentFileInfos.CollectionChanged += FileInfos_CollectionChangedAsync;
+            this.CurrentFileInfos = currentFileInfos;
+
         }
 
         private void SearchAction(string keyword)
         {
-            InitData(keyword);
+            this.RefreshCurrentFileInfosAsync(keyword);
         }
 
 
@@ -145,20 +167,37 @@ namespace Workshop.ViewModel
 
             this.RootExplorerItems = new ObservableCollection<ExplorerItem>() { root };
 
-            this.FileInfos = new ObservableCollection<IFileInfo>(fgalleryList.Where(c => !c.IsFolder));
-
-            FileInfos.CollectionChanged += FileInfos_CollectionChangedAsync;
             this.CurrentExplorerItem = RootExplorerItems.FirstOrDefault();
         }
 
-        private async Task FileInfos_CollectionChangedAsync(object sender, NotifyCollectionChangedEventArgs e)
+        private async void FileInfos_CollectionChangedAsync(object sender, NotifyCollectionChangedEventArgs e)
         {
+            var currentDomainsResult = await qiniuManager.SetCurrentDomain(qiniuManager.Bucket);
 
             switch (e.Action)
             {
                 case NotifyCollectionChangedAction.Add:
+                    var item = e.NewItems[0] as IFileInfo;
+                    var callbackBody = string.Format("key=$(key)&hash=$(etag)&bucket=$(bucket)&fsize=$(fsize)");
+                    var uploadResult = await qiniuManager.UploadSingle(item.Path, item.FileName, callbackBody);
+                    if (uploadResult)
+                    {
+                        this.RefreshCurrentFileInfosAsync();
+
+                    }
+                    else
+                    {
+                        await UIHelper.ShowAsync("上传图片成功，但是回调失败了");
+                        this.RefreshCurrentFileInfosAsync();
+                    }
                     break;
                 case NotifyCollectionChangedAction.Remove:
+                    var deleteResult = await qiniuManager.Delete(new List<Model.Qiniu.QiNiuFileInfo>() { e.OldItems[0] as Model.Qiniu.QiNiuFileInfo });
+                    if (deleteResult)
+                    {
+                        this.RefreshCurrentFileInfosAsync();
+
+                    }
                     break;
                 case NotifyCollectionChangedAction.Replace:
                     break;
@@ -169,17 +208,14 @@ namespace Workshop.ViewModel
                 default:
                     break;
             }
-            qiniuManager.Delete()
-            !await MenuManager.DeleteMenu(e.OldItems[0] as Menu)
-            throw new NotImplementedException();
         }
 
         private void RemoveImageAction(IFileInfo obj)
         {
-            var current = this.FileInfos.First(c => c == obj);
+            var current = this.CurrentFileInfos.First(c => c.FileName == obj.FileName);
             if (current != null)
             {
-                FileInfos.RemoveAt(FileInfos.IndexOf(current));
+                CurrentFileInfos.RemoveAt(CurrentFileInfos.IndexOf(current));
             }
 
         }
@@ -190,65 +226,32 @@ namespace Workshop.ViewModel
             var open = new FileOpenPicker();
             open.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
             open.FileTypeFilter.Add(".png");
+            open.FileTypeFilter.Add(".jpg");
 
-            var file = await open.PickSingleFileAsync();
+            UIHelper.InitFileOpenPicker(open);
+
+            var files = await open.PickMultipleFilesAsync();
+            if (files.Count == 0)
+            {
+                return;
+            }
+            var file = files[0];
 
             var basicProp = await file.GetBasicPropertiesAsync();
+            var filename = this.CurrentExplorerItem.Path + "/" + file.Name;
 
             var localfile = new LocalFileInfo()
             {
-                FileName = file.Name,
+                FileName = filename,
                 FileType = file.FileType,
                 FileSize = QiNiuHelper.GetFileSize((long)basicProp.Size),
-                CreateDate = basicProp.ItemDate.ToString("yyyy/MM/dd HH:mm:ss")
+                CreateDate = basicProp.ItemDate.ToString("yyyy/MM/dd HH:mm:ss"),
+                Path = file.Path,
             };
 
-            this.FileInfos.Add(localfile);
+            this.CurrentFileInfos.Insert(0, localfile);
         }
 
-
-        private async Task UploadImage()
-        {
-            int index = 0;
-
-            var currentDomainsResult = await qiniuManager.SetCurrentDomain(qiniuManager.Bucket);
-
-            foreach (var item in this.FileInfos)
-            {
-                if (index > 5)
-                {
-                    return;
-                }
-                var fileExtension = "";
-                //key格式: /670b14728ad9902aecba32e22fa4f6bd/670b14728ad9902aecba32e22fa4f6bd.jpg
-                var isFromNet = item.Path.StartsWith("http");
-                if (!isFromNet)
-                {
-                    fileExtension = Path.GetExtension(item.Path);
-
-                }
-                else
-                {
-                    fileExtension = string.Format(".{0}", item.Path.Split('.').LastOrDefault());
-                }
-                string fileName = Guid.NewGuid().ToString("N");
-                var key = string.Format("{{0}{1}", fileName, fileExtension);
-                var callbackBody = string.Format("key=$(key)&hash=$(etag)&bucket=$(bucket)&fsize=$(fsize)");
-                var uploadResult = await qiniuManager.UploadSingle(item.Path, key, callbackBody);
-                if (uploadResult)
-                {
-
-                }
-                else
-                {
-                    await MessageBox.ShowAsync("上传图片失败");
-                    break;
-                }
-
-                index++;
-            }
-
-        }
 
         private async Task Bucket(string storageSK)
         {
@@ -258,17 +261,7 @@ namespace Workshop.ViewModel
             qiniuManager.Bucket = bucketList.First();
         }
 
-        private ObservableCollection<IFileInfo> _fileInfos;
 
-        public ObservableCollection<IFileInfo> FileInfos
-        {
-            get { return _fileInfos; }
-            set
-            {
-                _fileInfos = value;
-                OnPropertyChanged(nameof(FileInfos));
-            }
-        }
 
         private ObservableCollection<IFileInfo> _currentFileInfos;
 

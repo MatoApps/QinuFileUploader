@@ -48,33 +48,26 @@
                 <TextBlock Text="{Binding SelectedFileInfo.FileSize}"></TextBlock>
                 <TextBlock Text="{Binding SelectedFileInfo.CreateDate}"></TextBlock>
                 <TextBlock Text="{Binding SelectedFileInfo.Path}"></TextBlock>
+                <Button Content="添加" Command="{Binding AddImageCommand}"></Button>
+                <Button Content="删除选中" Command="{ Binding RemoveImageCommand}" CommandParameter="{Binding SelectedFileInfo}"></Button>
             </StackPanel>
 
         </Grid>
-        <Grid  Margin="0,10" Width="420" Grid.Row="1" 
+        <StackPanel Orientation="Horizontal"  Margin="0,10" Width="420" Grid.Row="1" 
 				   HorizontalAlignment="Left" 
 				   VerticalAlignment="Bottom">
-            <Grid.RowDefinitions>
-                <RowDefinition></RowDefinition>
-                <RowDefinition></RowDefinition>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"></ColumnDefinition>
-                <ColumnDefinition></ColumnDefinition>
-                <ColumnDefinition Width="Auto"></ColumnDefinition>
-            </Grid.ColumnDefinitions>
+            <Button  Content="刷新" Command="{Binding RefreshCommand}"  Margin="10" Width="120"></Button>
+
             <TextBlock Text="模糊查询" VerticalAlignment="Center"></TextBlock>
             <TextBox x:Name="CurrentText" 
 					  Margin="10,10,0,10"
-					 Grid.Row="0"
-					 Grid.Column="1"
-
+                        Text="{Binding KeyWord, Mode=TwoWay}"
 						 Height="20" 
 						 VerticalAlignment="Stretch" TextWrapping="Wrap">
             </TextBox>
-            <Button Grid.Column="2" Content="查询" Command="{Binding SearchCommand}" Margin="10" Width="120"></Button>
+            <Button  Content="查询" Command="{Binding SearchCommand}" CommandParameter="{Binding KeyWord}" Margin="10" Width="120"></Button>
 
-        </Grid>
+        </StackPanel>
         <GridView Grid.Row="2"
             x:Name="BasicGridView"
             IsItemClickEnabled="True"
