@@ -30,6 +30,23 @@ namespace QinuFileUploader
         {
             this.InitializeComponent();
             this.MainFrame.DataContext = Ioc.Default.GetRequiredService<MenuPageViewModel>();
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(AppTitleBar);
+            Activated += MainWindow_Activated;
+        }
+
+        private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
+        {
+            if (args.WindowActivationState == WindowActivationState.Deactivated)
+            {
+                AppTitleTextBlock.Foreground =
+                    (Brush)App.Current.Resources["WindowCaptionForegroundDisabled"];
+            }
+            else
+            {
+                AppTitleTextBlock.Foreground =
+                    (Brush)App.Current.Resources["WindowCaptionForeground"];
+            }
         }
 
         private void TreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)

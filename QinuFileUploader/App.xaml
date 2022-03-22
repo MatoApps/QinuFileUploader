@@ -9,7 +9,23 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
+
             <!-- Other app resources here -->
-        </ResourceDictionary>
+            <SolidColorBrush x:Key="WindowCaptionForeground" Color="{ThemeResource TextFillColorPrimary}"></SolidColorBrush>
+            <SolidColorBrush x:Key="WindowCaptionForegroundDisabled" Color="{ThemeResource TextFillColorSecondary}"></SolidColorBrush>
+
+            <AcrylicBrush
+                x:Key="WindowCaptionBackground"
+                FallbackColor="{ThemeResource SolidBackgroundFillColorSecondary}"
+                TintColor="{ThemeResource SolidBackgroundFillColorSecondary}"
+                TintOpacity="0.65" ></AcrylicBrush>
+
+            <AcrylicBrush
+                x:Key="WindowCaptionBackgroundDisabled"
+                FallbackColor="{ThemeResource SolidBackgroundFillColorTertiary}"
+                TintColor="{ThemeResource SolidBackgroundFillColorTertiary}"
+                TintOpacity="0.65" ></AcrylicBrush>
+
+</ResourceDictionary>
     </Application.Resources>
 </Application>

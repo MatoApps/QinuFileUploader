@@ -12,75 +12,128 @@
 
     <Grid Name="MainFrame">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="1*"></RowDefinition>
+            <RowDefinition Height="32"/>
+            <RowDefinition/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0" Margin="0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition></ColumnDefinition>
-                <ColumnDefinition></ColumnDefinition>
-            </Grid.ColumnDefinitions>
 
-            <TreeView ItemsSource="{Binding RootExplorerItems}" SelectedItem="{Binding CurrentExplorerItem}"
-                   ItemInvoked="TreeView_ItemInvoked"
-                      SelectionMode="Single" 
-                      >
-                <TreeView.ItemTemplate>
-                    <DataTemplate
-                      x:DataType="model:ExplorerItem">
-                        <TreeViewItem AutomationProperties.Name="{Binding Name}"
-                ItemsSource="{Binding Children}" IsExpanded="True" >
-
-                            <StackPanel Orientation="Horizontal">
-                                <Image Width="20" Source="../Assets/folder.png"/>
-                                <TextBlock Margin="0,0,10,0"/>
-                                <TextBlock Text="{Binding Name}" />
-                            </StackPanel>
-                        </TreeViewItem>
-                    </DataTemplate>
-                </TreeView.ItemTemplate>
-            </TreeView>
-
-            <StackPanel Grid.Column="1">
-                <TextBlock Text="{Binding SelectedFileInfo.FileName}"></TextBlock>
-                <TextBlock Text="{Binding SelectedFileInfo.FileType}"></TextBlock>
-                <TextBlock Text="{Binding SelectedFileInfo.FileSize}"></TextBlock>
-                <TextBlock Text="{Binding SelectedFileInfo.CreateDate}"></TextBlock>
-                <TextBlock Text="{Binding SelectedFileInfo.Path}"></TextBlock>
-                <Button Content="添加" Command="{Binding AddImageCommand}"></Button>
-                <Button Content="删除选中" Command="{ Binding RemoveImageCommand}" CommandParameter="{Binding SelectedFileInfo}"></Button>
-            </StackPanel>
-
+        <Grid x:Name="AppTitleBar">
+            <Image Source="./Assets/folder.png"
+                   HorizontalAlignment="Left" 
+                   Width="16" Height="16" 
+                   Margin="8,0"/>
+            <TextBlock x:Name="AppTitleTextBlock" Text="App title"
+                       TextWrapping="NoWrap"
+                       Style="{StaticResource CaptionTextBlockStyle}" 
+                       VerticalAlignment="Center"
+                       Margin="28,0,0,0"/>
         </Grid>
-        <StackPanel Orientation="Horizontal"  Margin="0,10" Width="420" Grid.Row="1" 
-				   HorizontalAlignment="Left" 
-				   VerticalAlignment="Bottom">
-            <Button  Content="刷新" Command="{Binding RefreshCommand}"  Margin="10" Width="120"></Button>
 
-            <TextBlock Text="模糊查询" VerticalAlignment="Center"></TextBlock>
-            <TextBox x:Name="CurrentText" 
-					  Margin="10,10,0,10"
-                        Text="{Binding KeyWord, Mode=TwoWay}"
-						 Height="20" 
-						 VerticalAlignment="Stretch" TextWrapping="Wrap">
-            </TextBox>
-            <Button  Content="查询" Command="{Binding SearchCommand}" CommandParameter="{Binding KeyWord}" Margin="10" Width="120"></Button>
 
-        </StackPanel>
-        <GridView Grid.Row="2"
-            x:Name="BasicGridView"
-            IsItemClickEnabled="True"
-            ItemsSource="{Binding CurrentFileInfos}"
+        <SplitView  Grid.Row="1" 
+                    IsPaneOpen="True" OpenPaneLength="256" CompactPaneLength="48" DisplayMode="Inline">
+            <SplitView.Pane>
+                <Grid Grid.Column="0" MinWidth="320">
+                    <TreeView ItemsSource="{Binding RootExplorerItems}" SelectedItem="{Binding CurrentExplorerItem}"
+                              ItemInvoked="TreeView_ItemInvoked"
+                              SelectionMode="Single" 
+                    >
+                        <TreeView.ItemTemplate>
+                            <DataTemplate
+                                x:DataType="model:ExplorerItem">
+                                <TreeViewItem AutomationProperties.Name="{Binding Name}"
+                                              ItemsSource="{Binding Children}" IsExpanded="True" >
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Width="20" Source="/Assets/folder.png"/>
+                                        <TextBlock Margin="0,0,10,0"/>
+                                        <TextBlock Text="{Binding Name}" />
+                                    </StackPanel>
+                                </TreeViewItem>
+                            </DataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+
+                </Grid>
+            </SplitView.Pane>
+
+            <Grid >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="1*"></RowDefinition>
+                </Grid.RowDefinitions>
+                <!--Folder Title-->
+                <Grid Grid.Row="0">
+                    <TextBlock Text="{Binding CurrentExplorerItem.Name}" VerticalAlignment="Center"></TextBlock>
+
+
+                </Grid>
+
+                <!--Command Bar-->
+                <Grid Grid.Row="1">
+                    <StackPanel Orientation="Horizontal"  Margin="0,10"
+
+                                HorizontalAlignment="Left" 
+                                VerticalAlignment="Bottom">
+                        <Button  Content="刷新" Command="{Binding RefreshCommand}"  Margin="10" Width="120"></Button>
+
+                        <TextBlock Text="模糊查询" VerticalAlignment="Center"></TextBlock>
+                        <TextBox x:Name="CurrentText" 
+                                 Margin="10,10,0,10"
+                                 Text="{Binding KeyWord, Mode=TwoWay}"
+                                 Height="20" 
+                                 VerticalAlignment="Stretch" TextWrapping="Wrap">
+                        </TextBox>
+                        <Button  Content="查询" Command="{Binding SearchCommand}" CommandParameter="{Binding KeyWord}" Margin="10" Width="120"></Button>
+
+                        <Button Content="添加" Command="{Binding AddImageCommand}"></Button>
+                        <Button Content="删除选中" Command="{ Binding RemoveImageCommand}" CommandParameter="{Binding SelectedFileInfo}"></Button>
+
+                    </StackPanel>
+                </Grid>
+
+                <!--File Content-->
+                <Grid Grid.Row="2" Margin="0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition></ColumnDefinition>
+                        <ColumnDefinition Width="256"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+
+                    <!--File Grid-->
+                    <Grid>
+
+                        <GridView
+                                  x:Name="BasicGridView"
+                                  IsItemClickEnabled="True"
+                                  ItemsSource="{Binding CurrentFileInfos}"
                  
-              SelectedItem="{Binding SelectedFileInfo}"
-                  ItemClick="BasicGridView_ItemClick"
-            SelectionMode="Single">
-            <GridView.ItemTemplate>
-                <DataTemplate>
-                    <Image Source="{Binding Path}" Width="90" Height="90" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </DataTemplate>
-            </GridView.ItemTemplate>
-        </GridView>
+                                  SelectedItem="{Binding SelectedFileInfo}"
+                                  ItemClick="BasicGridView_ItemClick"
+                                  SelectionMode="Single">
+                            <GridView.ItemTemplate>
+                                <DataTemplate>
+                                    <Image Source="{Binding Path}" Width="90" Height="90" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </GridView.ItemTemplate>
+                        </GridView>
+
+                    </Grid>
+
+                    <!--File Info-->
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="{Binding SelectedFileInfo.FileName}"></TextBlock>
+                        <TextBlock Text="{Binding SelectedFileInfo.FileType}"></TextBlock>
+                        <TextBlock Text="{Binding SelectedFileInfo.FileSize}"></TextBlock>
+                        <TextBlock Text="{Binding SelectedFileInfo.CreateDate}"></TextBlock>
+                        <TextBlock Text="{Binding SelectedFileInfo.Path}"></TextBlock>
+
+                    </StackPanel>
+
+                </Grid>
+
+            </Grid>
+
+        </SplitView>
+
     </Grid>
 </Window>
