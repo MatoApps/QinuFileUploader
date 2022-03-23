@@ -26,6 +26,29 @@
                 TintColor="{ThemeResource SolidBackgroundFillColorTertiary}"
                 TintOpacity="0.65" ></AcrylicBrush>
 
-</ResourceDictionary>
+
+
+            <Style x:Key="NavigationViewPaneSearchButtonStyle" TargetType="Button">
+                <Setter Property="BorderThickness" Value="{ThemeResource NavigationViewToggleBorderThickness}" />
+
+            </Style>
+
+            <Style x:Key="NavigationBarButtonStyle" TargetType="Button">
+                <Setter Property="BorderThickness" Value="{ThemeResource NavigationViewToggleBorderThickness}" />
+                <Setter Property="Background" Value="Transparent" />
+
+            </Style>
+            <Style x:Key="NavigationTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="FontWeight" Value="SemiLight" />
+            </Style>
+
+            <Style x:Key="NavigationFlyoutStyle" TargetType="FlyoutPresenter">
+                <Setter Property="Padding" Value="0,0,0,0" />
+                <Setter Property="MinWidth" Value="650" />
+                <Setter Property="MinHeight" Value="250" />
+            </Style>
+
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

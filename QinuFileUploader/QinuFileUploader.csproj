@@ -66,6 +66,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Assets\Fonts\" />
     <Folder Include="View\" />
   </ItemGroup>
 </Project>

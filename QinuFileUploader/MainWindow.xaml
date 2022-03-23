@@ -13,6 +13,7 @@
     <Grid Name="MainFrame">
         <Grid.RowDefinitions>
             <RowDefinition Height="32"/>
+            <RowDefinition Height="64"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
 
@@ -27,15 +28,91 @@
                        VerticalAlignment="Center"
                        Margin="28,0,0,0"/>
         </Grid>
+        <Grid Grid.Row="1" Background="{StaticResource WindowCaptionBackground}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"></ColumnDefinition>
+                <ColumnDefinition Width="2*"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" >
+                <Button Style="{StaticResource NavigationBarButtonStyle}"  Command="{Binding NavigationHistoryBackCommand}"  Margin="10">
+                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE72B;"/>
+                </Button>
+                <Button  Style="{StaticResource NavigationBarButtonStyle}"  Command="{Binding NavigationHistoryForwardCommand}"  Margin="10" >
+                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE72A;"/>
+
+                </Button>
+                <Button  Style="{StaticResource NavigationBarButtonStyle}"  Command="{Binding NavigationBackCommand}"  Margin="10" >
+                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE74A;"/>
+
+                </Button>
+                <Button  Style="{StaticResource NavigationBarButtonStyle}"   Command="{Binding RefreshCommand}"  Margin="10" >
+                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE72C;"/>
+
+                </Button>
+            </StackPanel>
+            <Grid Grid.Column="1">
+                <SplitButton x:Name="myColorButton"
+                             
+                             VerticalAlignment="Center"
+                             HorizontalAlignment="Stretch">
+                    <Grid>
+                        <BreadcrumbBar VerticalAlignment="Center"  HorizontalAlignment="Stretch" ItemsSource="{Binding PathList}">
+                        </BreadcrumbBar>
+                    </Grid>
+
+                    <SplitButton.Flyout>
+                        <Flyout Placement="Bottom" FlyoutPresenterStyle="{StaticResource NavigationFlyoutStyle}">
+                            <Grid>
+                                <ListView 
+                                    ItemsSource="{Binding NavigationHistoryStack}">
+
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Path}" Margin="0,5,0,5"/>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Grid>
+                        </Flyout>
+                    </SplitButton.Flyout>
+                </SplitButton>
 
 
-        <SplitView  Grid.Row="1" 
-                    IsPaneOpen="True" OpenPaneLength="256" CompactPaneLength="48" DisplayMode="Inline">
+            </Grid>
+            <Grid  Grid.Column="2" Margin="12,0">
+
+                <TextBox x:Name="CurrentText" 
+                         VerticalAlignment="Center"
+                         Width="200"
+                         Text="{Binding KeyWord, Mode=TwoWay}"
+                         TextWrapping="Wrap">
+                </TextBox>
+                <Button  HorizontalAlignment="Right"
+                         VerticalAlignment="Center"
+                         Margin="0,18"
+                         Style="{StaticResource NavigationBarButtonStyle}" 
+                         Command="{Binding SearchCommand}" CommandParameter="{Binding KeyWord}" 
+                        >
+
+                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE721;"/>
+
+                </Button>
+            </Grid>
+        </Grid>
+
+        <SplitView  Grid.Row="2" 
+                    IsPaneOpen="True" 
+                    OpenPaneLength="256" 
+                    CompactPaneLength="48" 
+                    PaneBackground="{ThemeResource ControlSolidFillColorDefaultBrush}"
+                    DisplayMode="Inline">
             <SplitView.Pane>
                 <Grid Grid.Column="0" MinWidth="320">
-                    <TreeView ItemsSource="{Binding RootExplorerItems}" SelectedItem="{Binding CurrentExplorerItem}"
+                    <TreeView ItemsSource="{Binding RootExplorerItems}" SelectedItem="{Binding CurrentExplorerItem ,Mode=TwoWay}"
                               ItemInvoked="TreeView_ItemInvoked"
                               SelectionMode="Single" 
+                              Margin="0,12"
                     >
                         <TreeView.ItemTemplate>
                             <DataTemplate
@@ -46,7 +123,9 @@
                                     <StackPanel Orientation="Horizontal">
                                         <Image Width="20" Source="/Assets/folder.png"/>
                                         <TextBlock Margin="0,0,10,0"/>
-                                        <TextBlock Text="{Binding Name}" />
+                                        <TextBlock Style="{StaticResource NavigationTextBlockStyle}" 
+                                                   
+                                                   Text="{Binding Name}" />
                                     </StackPanel>
                                 </TreeViewItem>
                             </DataTemplate>
@@ -60,47 +139,27 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"></RowDefinition>
                     <RowDefinition Height="Auto"></RowDefinition>
-                    <RowDefinition Height="Auto"></RowDefinition>
                     <RowDefinition Height="1*"></RowDefinition>
                 </Grid.RowDefinitions>
                 <!--Folder Title-->
-                <Grid Grid.Row="0">
-                    <TextBlock Text="{Binding CurrentExplorerItem.Name}" VerticalAlignment="Center"></TextBlock>
+                <Grid Grid.Row="0" Margin="12,0">
+                    <TextBlock Style="{StaticResource HeaderTextBlockStyle}" Text="{Binding CurrentExplorerItem.Name}" VerticalAlignment="Center"></TextBlock>
 
 
                 </Grid>
-                <Grid Grid.Row="1">
-                    <BreadcrumbBar ItemsSource="{Binding PathList}">
-                    </BreadcrumbBar>
-                </Grid>
+
                 <!--Command Bar-->
-                <Grid Grid.Row="2">
-                    <StackPanel Orientation="Horizontal"  Margin="0,10"
+                <Grid Grid.Row="1">
+                    <CommandBar Background="Transparent" HorizontalAlignment="Left" IsOpen="False" DefaultLabelPosition="Right">
+                        <AppBarButton Icon="Add" Label="上传"  Command="{Binding AddImageCommand}"/>
+                        <AppBarButton Icon="Delete" Label="删除"  Command="{ Binding RemoveImageCommand}" CommandParameter="{Binding SelectedFileInfo}" />
 
-                                HorizontalAlignment="Left" 
-                                VerticalAlignment="Bottom">
-                        <Button  Content="后退" Command="{Binding NavigationHistoryBackCommand}"  Margin="10" Width="120"></Button>
-                        <Button  Content="前进" Command="{Binding NavigationHistoryForwardCommand}"  Margin="10" Width="120"></Button>
-                        <Button  Content="向上" Command="{Binding NavigationBackCommand}"  Margin="10" Width="120"></Button>
-                        <Button  Content="刷新" Command="{Binding RefreshCommand}"  Margin="10" Width="120"></Button>
+                    </CommandBar>
 
-                        <TextBlock Text="模糊查询" VerticalAlignment="Center"></TextBlock>
-                        <TextBox x:Name="CurrentText" 
-                                 Margin="10,10,0,10"
-                                 Text="{Binding KeyWord, Mode=TwoWay}"
-                                 Height="20" 
-                                 VerticalAlignment="Stretch" TextWrapping="Wrap">
-                        </TextBox>
-                        <Button  Content="查询" Command="{Binding SearchCommand}" CommandParameter="{Binding KeyWord}" Margin="10" Width="120"></Button>
-
-                        <Button Content="添加" Command="{Binding AddImageCommand}"></Button>
-                        <Button Content="删除选中" Command="{ Binding RemoveImageCommand}" CommandParameter="{Binding SelectedFileInfo}"></Button>
-
-                    </StackPanel>
                 </Grid>
 
                 <!--File Content-->
-                <Grid Grid.Row="3" Margin="0,10">
+                <Grid Grid.Row="2" Margin="0,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition></ColumnDefinition>
                         <ColumnDefinition Width="256"></ColumnDefinition>

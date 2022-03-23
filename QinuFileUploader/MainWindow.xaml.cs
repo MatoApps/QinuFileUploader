@@ -51,7 +51,7 @@ namespace QinuFileUploader
 
         private void TreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
         {
-            (this.MainFrame.DataContext as MenuPageViewModel).CurrentExplorerItem = (ExplorerItem)args.InvokedItem;
+            (this.MainFrame.DataContext as MenuPageViewModel).NavigationTo((ExplorerItem)args.InvokedItem);
         }
 
         private void BasicGridView_ItemClick(object sender, ItemClickEventArgs e)

@@ -25,6 +25,8 @@ namespace Workshop.ViewModel
         private readonly IQiniuManager _qiniuManager;
         private readonly IMimeTypeManager _mimeTypeManager;
 
+        private const string Rootname = "我的网盘";
+        private const char SpliterChar = '/';
         public RelayCommand<string> SearchCommand { get; private set; }
         public RelayCommand NavigationHistoryBackCommand { get; private set; }
         public RelayCommand NavigationHistoryForwardCommand { get; private set; }
@@ -74,17 +76,8 @@ namespace Workshop.ViewModel
                     return;
                 }
 
-                this.DealWithNavigationStack(this.CurrentExplorerItem);
-
-                this.NavigationHistoryStack.ForEach((element) =>
-                {
-                    element.IsCurrent = false;
-                });
-                this.CurrentExplorerItem.IsCurrent = true;
-                this.PushNavigationHistoryStack(this.CurrentExplorerItem);
-
                 this.PathList.Clear();
-                foreach (var path in CurrentExplorerItem.Path.Split('/').ToList())
+                foreach (var path in CurrentExplorerItem.Path.Split(SpliterChar).ToList())
                 {
                     this.PathList.Add(path);
                 }
@@ -97,8 +90,23 @@ namespace Workshop.ViewModel
         {
 
 
-            var targetPath = this.CurrentExplorerItem.Path + '/' + keyword;
-            var targetDirectoryPath = Path.GetDirectoryName(this.CurrentExplorerItem.Path + '/');
+            var targetPath = this.CurrentExplorerItem.Path + SpliterChar + keyword;
+
+            if (targetPath.StartsWith(Rootname))
+            {
+                targetPath = targetPath.Substring(Rootname.Length, targetPath.Length - Rootname.Length);
+            }
+
+            if (targetPath.StartsWith(SpliterChar))
+            {
+                targetPath = targetPath.Substring(1, targetPath.Length - 1);
+            }
+
+            var targetDirectoryPath = Path.GetDirectoryName(targetPath + SpliterChar);
+            if (targetDirectoryPath == null)
+            {
+                targetDirectoryPath = string.Empty;
+            }
 
             var fileInfos = await _qiniuManager.Search(_qiniuManager.Bucket, targetPath);
             var currentFileInfos = new ObservableCollectionEx<IFileInfo>(fileInfos.Where(c => !c.IsFolder).Where(c =>
@@ -128,12 +136,12 @@ namespace Workshop.ViewModel
             ExplorerItem root = null;
             foreach (var folder in folders)
             {
-                var trimdFolder = folder;
-                if (folder.EndsWith('/'))
+                var trimdFolder = Rootname + SpliterChar + folder;
+                if (trimdFolder.EndsWith(SpliterChar))
                 {
-                    trimdFolder = folder.Substring(0, folder.Length - 1);
+                    trimdFolder = trimdFolder.Substring(0, trimdFolder.Length - 1);
                 }
-                var pathArray = trimdFolder.Split('/');
+                var pathArray = trimdFolder.Split(SpliterChar);
 
                 void b(ref ExplorerItem current, int index)
                 {
@@ -147,7 +155,7 @@ namespace Workshop.ViewModel
                     var next = current.Children.FirstOrDefault(c => c.Name == name);
                     if (next == null)
                     {
-                        var path = string.Join("/", pathArray);
+                        var path = string.Join(SpliterChar, pathArray);
 
                         var currentExplorerItem = new ExplorerItem()
                         {
@@ -171,7 +179,7 @@ namespace Workshop.ViewModel
                     }
                     var children = new ObservableCollectionEx<ExplorerItem>();
                     children.Add(ex);
-                    var path = string.Join("/", pathArray, 0, index + 1);
+                    var path = string.Join(SpliterChar, pathArray, 0, index + 1);
 
                     var e = new ExplorerItem()
                     {
@@ -199,6 +207,9 @@ namespace Workshop.ViewModel
             }
 
             this.RootExplorerItems = new ObservableCollectionEx<ExplorerItem>() { root };
+
+            this.NavigationHistoryStack.Add(root);
+            this.NavigationStack.Add(root);
 
             this.CurrentExplorerItem = RootExplorerItems.FirstOrDefault();
         }
@@ -271,7 +282,7 @@ namespace Workshop.ViewModel
             var file = files[0];
 
             var basicProp = await file.GetBasicPropertiesAsync();
-            var filename = this.CurrentExplorerItem.Path + "/" + file.Name;
+            var filename = this.CurrentExplorerItem.Path + SpliterChar + file.Name;
             var fileType = _mimeTypeManager.GetMimeType(file.FileType);
             var localfile = new LocalFileInfo()
             {
@@ -297,7 +308,7 @@ namespace Workshop.ViewModel
 
 
 
-        private async void NavigationBack()
+        private void NavigationBack()
         {
             if (this.NavigationStack.Count == 1)
             {
@@ -321,7 +332,7 @@ namespace Workshop.ViewModel
                 this.PushNavigationHistoryStack(lastItem);
             }
         }
-        private async void PushNavigationHistoryStack(ExplorerItem item)
+        private void PushNavigationHistoryStack(ExplorerItem item)
         {
             var newItem = new ExplorerItem
             {
@@ -340,11 +351,11 @@ namespace Workshop.ViewModel
             this.NavigationHistoryStack.Unshift(newItem);
         }
 
-        private async void DealWithNavigationStack(ExplorerItem folder)
+        private void DealWithNavigationStack(ExplorerItem folder)
         {
 
-            this.NavigationHistoryStack.Clear();
-            var paths = folder.Path.Split('/');
+            this.NavigationStack.Clear();
+            var paths = folder.Path.Split(SpliterChar);
 
 
             void a(IEnumerable<ExplorerItem> ex, int index)
@@ -367,7 +378,7 @@ namespace Workshop.ViewModel
             a(this.RootExplorerItems, 0);
         }
 
-        private async void NavigationTo(ExplorerItem folder)
+        public void NavigationTo(ExplorerItem folder)
         {
             this.DealWithNavigationStack(folder);
             if (this.ToFolder(folder))
@@ -381,7 +392,7 @@ namespace Workshop.ViewModel
             }
         }
 
-        private async void NavigationHistoryBack()
+        private void NavigationHistoryBack()
         {
             var currentIndex = (this.NavigationHistoryStack).IndexOf(
               (c) => c.IsCurrent
@@ -404,7 +415,7 @@ namespace Workshop.ViewModel
             }
         }
 
-        private async void NavigationHistoryForward()
+        private void NavigationHistoryForward()
         {
 
             var currentIndex = this.NavigationHistoryStack.IndexOf(
@@ -434,7 +445,7 @@ namespace Workshop.ViewModel
             {
                 return false;
             }
-            //var paths = item.Path.Split('/');
+            //var paths = item.Path.Split(SpliterChar);
 
             //ExplorerItem a(IEnumerable<ExplorerItem> ex, int index)
             //{

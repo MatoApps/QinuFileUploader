@@ -60,6 +60,11 @@ namespace QinuFileUploader.Model
                 }
             }
         }
+
+        public override string ToString()
+        {
+            return this.Path;
+        }
     }
 
 }
