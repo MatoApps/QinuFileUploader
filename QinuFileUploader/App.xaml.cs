@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
+using QinuFileUploader.Service;
 using Workshop.Service.Manager;
 using Workshop.ViewModel;
 
@@ -33,6 +34,7 @@ namespace QinuFileUploader
                     new ServiceCollection()
                     //Services
                     .AddSingleton<IQiniuManager, QiniuManager>()
+                    .AddSingleton<IMimeTypeManager, MimeTypeManager>()
                     //ViewModels
                     .AddTransient<MenuPageViewModel>()
                     .BuildServiceProvider());

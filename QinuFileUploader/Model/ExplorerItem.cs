@@ -14,6 +14,21 @@ namespace QinuFileUploader.Model
         public enum ExplorerItemType { Folder, File };
         public string Name { get; set; }
         public string Path { get; set; }
+
+        private bool _isCurrent;
+
+        public bool IsCurrent
+        {
+            get { return _isCurrent; }
+            set
+            {
+                _isCurrent = value;
+
+                OnPropertyChanged(nameof(IsCurrent));
+
+            }
+        }
+
         public ExplorerItemType Type { get; set; }
         private ObservableCollection<ExplorerItem> m_children;
         public ObservableCollection<ExplorerItem> Children

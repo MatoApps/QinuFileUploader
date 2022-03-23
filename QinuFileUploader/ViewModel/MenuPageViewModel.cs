@@ -13,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
+using QinuFileUploader.Service;
 using Workshop.Infrastructure.Common;
 using Workshop.Infrastructure.Helper;
 using Workshop.Service.Manager;
@@ -21,23 +22,40 @@ namespace Workshop.ViewModel
 {
     public class MenuPageViewModel : ObservableObject
     {
-        private readonly IQiniuManager qiniuManager;
+        private readonly IQiniuManager _qiniuManager;
+        private readonly IMimeTypeManager _mimeTypeManager;
 
         public RelayCommand<string> SearchCommand { get; private set; }
+        public RelayCommand NavigationHistoryBackCommand { get; private set; }
+        public RelayCommand NavigationHistoryForwardCommand { get; private set; }
+        public RelayCommand NavigationBackCommand { get; private set; }
         public RelayCommand RefreshCommand { get; private set; }
         public RelayCommand AddImageCommand { get; }
         public RelayCommand<IFileInfo> RemoveImageCommand { get; private set; }
 
-        public MenuPageViewModel(IQiniuManager qiniuManager)
+        public MenuPageViewModel(IQiniuManager qiniuManager, IMimeTypeManager mimeTypeManager)
         {
-            this.qiniuManager = qiniuManager;
+            this._qiniuManager = qiniuManager;
+            _mimeTypeManager = mimeTypeManager;
             this.PropertyChanged += MenuPageViewModel_PropertyChanged;
 
-            this.SearchCommand = new RelayCommand<string>(SearchAction);
+            //init commands
             this.RefreshCommand = new RelayCommand(RefreshAction);
+            this.NavigationHistoryBackCommand = new RelayCommand(NavigationHistoryBack);
+            this.NavigationHistoryForwardCommand = new RelayCommand(NavigationHistoryForward);
+            this.NavigationBackCommand = new RelayCommand(NavigationBack);
+
+            this.SearchCommand = new RelayCommand<string>(SearchAction);
             this.AddImageCommand = new RelayCommand(AddImageAction);
             this.RemoveImageCommand = new RelayCommand<IFileInfo>(RemoveImageAction);
+
+
+            //init data
+            this.NavigationStack = new ObservableCollectionEx<ExplorerItem>();
+            this.NavigationHistoryStack = new ObservableCollectionEx<ExplorerItem>();
             this.KeyWord = "";
+
+            this.PathList = new ObservableCollectionEx<string>();
             InitData();
 
         }
@@ -47,7 +65,7 @@ namespace Workshop.ViewModel
             InitData();
         }
 
-        private void MenuPageViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private async void MenuPageViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(CurrentExplorerItem))
             {
@@ -55,7 +73,22 @@ namespace Workshop.ViewModel
                 {
                     return;
                 }
-                RefreshCurrentFileInfosAsync();
+
+                this.DealWithNavigationStack(this.CurrentExplorerItem);
+
+                this.NavigationHistoryStack.ForEach((element) =>
+                {
+                    element.IsCurrent = false;
+                });
+                this.CurrentExplorerItem.IsCurrent = true;
+                this.PushNavigationHistoryStack(this.CurrentExplorerItem);
+
+                this.PathList.Clear();
+                foreach (var path in CurrentExplorerItem.Path.Split('/').ToList())
+                {
+                    this.PathList.Add(path);
+                }
+                await RefreshCurrentFileInfosAsync();
             }
 
         }
@@ -67,8 +100,8 @@ namespace Workshop.ViewModel
             var targetPath = this.CurrentExplorerItem.Path + '/' + keyword;
             var targetDirectoryPath = Path.GetDirectoryName(this.CurrentExplorerItem.Path + '/');
 
-            var fileInfos = await qiniuManager.Search(qiniuManager.Bucket, targetPath);
-            var currentFileInfos = new ObservableCollection<IFileInfo>(fileInfos.Where(c => !c.IsFolder).Where(c =>
+            var fileInfos = await _qiniuManager.Search(_qiniuManager.Bucket, targetPath);
+            var currentFileInfos = new ObservableCollectionEx<IFileInfo>(fileInfos.Where(c => !c.IsFolder).Where(c =>
             {
                 var result = Path.GetDirectoryName(c.FileName) == targetDirectoryPath;
                 return result;
@@ -78,9 +111,9 @@ namespace Workshop.ViewModel
 
         }
 
-        private void SearchAction(string keyword)
+        private async void SearchAction(string keyword)
         {
-            this.RefreshCurrentFileInfosAsync(keyword);
+            await this.RefreshCurrentFileInfosAsync(keyword);
         }
 
 
@@ -88,7 +121,7 @@ namespace Workshop.ViewModel
         {
             var storageSK = ConfigureProvider.StorageAppSecret;
             await Bucket(storageSK);
-            var fgalleryList = await qiniuManager.Search(qiniuManager.Bucket, keyword);
+            var fgalleryList = await _qiniuManager.Search(_qiniuManager.Bucket, keyword);
 
             var folders = fgalleryList.Where(c => c.IsFolder).GroupBy(c => c.FileName).Select(c => c.Key).ToList();
 
@@ -136,7 +169,7 @@ namespace Workshop.ViewModel
                     {
                         return ex;
                     }
-                    var children = new ObservableCollection<ExplorerItem>();
+                    var children = new ObservableCollectionEx<ExplorerItem>();
                     children.Add(ex);
                     var path = string.Join("/", pathArray, 0, index + 1);
 
@@ -165,37 +198,37 @@ namespace Workshop.ViewModel
                 }
             }
 
-            this.RootExplorerItems = new ObservableCollection<ExplorerItem>() { root };
+            this.RootExplorerItems = new ObservableCollectionEx<ExplorerItem>() { root };
 
             this.CurrentExplorerItem = RootExplorerItems.FirstOrDefault();
         }
 
         private async void FileInfos_CollectionChangedAsync(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var currentDomainsResult = await qiniuManager.SetCurrentDomain(qiniuManager.Bucket);
+            var currentDomainsResult = await _qiniuManager.SetCurrentDomain(_qiniuManager.Bucket);
 
             switch (e.Action)
             {
                 case NotifyCollectionChangedAction.Add:
                     var item = e.NewItems[0] as IFileInfo;
                     var callbackBody = string.Format("key=$(key)&hash=$(etag)&bucket=$(bucket)&fsize=$(fsize)");
-                    var uploadResult = await qiniuManager.UploadSingle(item.Path, item.FileName, callbackBody);
+                    var uploadResult = await _qiniuManager.UploadSingle(item.Path, item.FileName, callbackBody);
                     if (uploadResult)
                     {
-                        this.RefreshCurrentFileInfosAsync();
+                        await this.RefreshCurrentFileInfosAsync();
 
                     }
                     else
                     {
                         await UIHelper.ShowAsync("上传图片成功，但是回调失败了");
-                        this.RefreshCurrentFileInfosAsync();
+                        await this.RefreshCurrentFileInfosAsync();
                     }
                     break;
                 case NotifyCollectionChangedAction.Remove:
-                    var deleteResult = await qiniuManager.Delete(new List<Model.Qiniu.QiNiuFileInfo>() { e.OldItems[0] as Model.Qiniu.QiNiuFileInfo });
+                    var deleteResult = await _qiniuManager.Delete(new List<Model.Qiniu.QiNiuFileInfo>() { e.OldItems[0] as Model.Qiniu.QiNiuFileInfo });
                     if (deleteResult)
                     {
-                        this.RefreshCurrentFileInfosAsync();
+                        await this.RefreshCurrentFileInfosAsync();
 
                     }
                     break;
@@ -239,11 +272,11 @@ namespace Workshop.ViewModel
 
             var basicProp = await file.GetBasicPropertiesAsync();
             var filename = this.CurrentExplorerItem.Path + "/" + file.Name;
-
+            var fileType = _mimeTypeManager.GetMimeType(file.FileType);
             var localfile = new LocalFileInfo()
             {
                 FileName = filename,
-                FileType = file.FileType,
+                FileType = fileType,
                 FileSize = QiNiuHelper.GetFileSize((long)basicProp.Size),
                 CreateDate = basicProp.ItemDate.ToString("yyyy/MM/dd HH:mm:ss"),
                 Path = file.Path,
@@ -255,17 +288,219 @@ namespace Workshop.ViewModel
 
         private async Task Bucket(string storageSK)
         {
-            var currentArea = qiniuManager.GetQiniuAreas().First(c => c.Name == "华南");
-            var bucketList = await qiniuManager.ConnectServer(ConfigureProvider.StorageAppKey, storageSK, currentArea.ZoneValue);
+            var currentArea = _qiniuManager.GetQiniuAreas().First(c => c.Name == "华南");
+            var bucketList = await _qiniuManager.ConnectServer(ConfigureProvider.StorageAppKey, storageSK, currentArea.ZoneValue);
 
-            qiniuManager.Bucket = bucketList.First();
+            _qiniuManager.Bucket = bucketList.First();
         }
 
 
 
-        private ObservableCollection<IFileInfo> _currentFileInfos;
 
-        public ObservableCollection<IFileInfo> CurrentFileInfos
+        private async void NavigationBack()
+        {
+            if (this.NavigationStack.Count == 1)
+            {
+                return;
+            }
+            this.NavigationStack.Pop();
+            var lastItem = this.NavigationStack.LastOrDefault();
+            if (lastItem == null)
+            {
+                return;
+            }
+            if (this.ToFolder(lastItem))
+            {
+
+                this.NavigationHistoryStack.ForEach((element) =>
+                {
+                    element.IsCurrent = false;
+                });
+                lastItem.IsCurrent = true;
+
+                this.PushNavigationHistoryStack(lastItem);
+            }
+        }
+        private async void PushNavigationHistoryStack(ExplorerItem item)
+        {
+            var newItem = new ExplorerItem
+            {
+                Name = item.Name,
+                Path = item.Path,
+                IsCurrent = item.IsCurrent,
+                Type = item.Type,
+                Children = item.Children,
+                IsExpanded = false
+            };
+
+            if (this.NavigationHistoryStack.Count > 10)
+            {
+                this.NavigationHistoryStack.Pop();
+            }
+            this.NavigationHistoryStack.Unshift(newItem);
+        }
+
+        private async void DealWithNavigationStack(ExplorerItem folder)
+        {
+
+            this.NavigationHistoryStack.Clear();
+            var paths = folder.Path.Split('/');
+
+
+            void a(IEnumerable<ExplorerItem> ex, int index)
+            {
+                if (index > paths.Length - 1)
+                {
+                    return;
+                }
+
+                var currentName = paths[index];
+                var currentExplorerItem = ex.FirstOrDefault(c => c.Name == currentName);
+                if (currentExplorerItem == null)
+                {
+                    return;
+
+                }
+                this.NavigationStack.Push(currentExplorerItem);
+                a(currentExplorerItem.Children, index + 1);
+            }
+            a(this.RootExplorerItems, 0);
+        }
+
+        private async void NavigationTo(ExplorerItem folder)
+        {
+            this.DealWithNavigationStack(folder);
+            if (this.ToFolder(folder))
+            {
+                this.NavigationHistoryStack.ForEach((element) =>
+                {
+                    element.IsCurrent = false;
+                });
+                folder.IsCurrent = true;
+                this.PushNavigationHistoryStack(folder);
+            }
+        }
+
+        private async void NavigationHistoryBack()
+        {
+            var currentIndex = (this.NavigationHistoryStack).IndexOf(
+              (c) => c.IsCurrent
+            );
+            if (currentIndex < this.NavigationHistoryStack.Count - 1)
+            {
+                var forwardIndex = currentIndex + 1;
+
+                var folder = this.NavigationHistoryStack[forwardIndex];
+                this.DealWithNavigationStack(folder);
+
+                if (this.ToFolder(folder))
+                {
+                    this.NavigationHistoryStack.ForEach((element) =>
+                    {
+                        element.IsCurrent = false;
+                    });
+                    this.NavigationHistoryStack[forwardIndex].IsCurrent = true;
+                }
+            }
+        }
+
+        private async void NavigationHistoryForward()
+        {
+
+            var currentIndex = this.NavigationHistoryStack.IndexOf(
+              (c) => c.IsCurrent
+            );
+            if (currentIndex > 0)
+            {
+                var forwardIndex = currentIndex - 1;
+
+                var folder = this.NavigationHistoryStack[forwardIndex];
+                this.DealWithNavigationStack(folder);
+
+                if (this.ToFolder(folder))
+                {
+                    this.NavigationHistoryStack.ForEach((element) =>
+                    {
+                        element.IsCurrent = false;
+                    });
+                    this.NavigationHistoryStack[forwardIndex].IsCurrent = true;
+                }
+            }
+        }
+
+        private bool ToFolder(ExplorerItem item)
+        {
+            if (item == null || item.Path == this.CurrentExplorerItem.Path)
+            {
+                return false;
+            }
+            //var paths = item.Path.Split('/');
+
+            //ExplorerItem a(IEnumerable<ExplorerItem> ex, int index)
+            //{
+            //    if (index > paths.Length - 1)
+            //    {
+            //        return null;
+            //    }
+
+            //    var currentName = paths[index];
+            //    var currentExplorerItem = ex.FirstOrDefault(c => c.Name == currentName);
+            //    if (currentExplorerItem == null)
+            //    {
+            //        return null;
+            //    }
+            //    return a(currentExplorerItem.Children, index + 1);
+            //}
+            //var currentExplorerItem = a(this.RootExplorerItems, 0);
+
+            var currentExplorerItem = this.NavigationStack.FirstOrDefault(c => c.Path == item.Path);
+
+            if (currentExplorerItem == null)
+            {
+                return false;
+            }
+
+            this.CurrentExplorerItem = currentExplorerItem;
+            return true;
+        }
+
+
+        private bool GetIsCurrentHistoryNavigationItem(ExplorerItem item)
+        {
+            var result = item.IsCurrent;
+            return result;
+        }
+
+
+
+        private ObservableCollectionEx<ExplorerItem> _navigationStack;
+
+        public ObservableCollectionEx<ExplorerItem> NavigationStack
+        {
+            get { return _navigationStack; }
+            set
+            {
+                _navigationStack = value;
+                OnPropertyChanged(nameof(NavigationStack));
+            }
+        }
+
+        private ObservableCollectionEx<ExplorerItem> _navigationHistoryStack;
+
+        public ObservableCollectionEx<ExplorerItem> NavigationHistoryStack
+        {
+            get { return _navigationHistoryStack; }
+            set
+            {
+                _navigationHistoryStack = value;
+                OnPropertyChanged(nameof(NavigationHistoryStack));
+            }
+        }
+
+
+        private ObservableCollectionEx<IFileInfo> _currentFileInfos;
+
+        public ObservableCollectionEx<IFileInfo> CurrentFileInfos
         {
             get { return _currentFileInfos; }
             set
@@ -287,9 +522,9 @@ namespace Workshop.ViewModel
             }
         }
 
-        private ObservableCollection<ExplorerItem> _rootExplorerItem;
+        private ObservableCollectionEx<ExplorerItem> _rootExplorerItem;
 
-        public ObservableCollection<ExplorerItem> RootExplorerItems
+        public ObservableCollectionEx<ExplorerItem> RootExplorerItems
         {
             get { return _rootExplorerItem; }
             set
@@ -311,6 +546,21 @@ namespace Workshop.ViewModel
 
             }
         }
+
+        private ObservableCollectionEx<string> _pathList;
+
+        public ObservableCollectionEx<string> PathList
+        {
+            get { return _pathList; }
+            set
+            {
+                _pathList = value;
+                OnPropertyChanged(nameof(PathList));
+
+
+            }
+        }
+
 
 
 
