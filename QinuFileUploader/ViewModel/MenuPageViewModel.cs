@@ -33,6 +33,8 @@ namespace Workshop.ViewModel
         public RelayCommand NavigationBackCommand { get; private set; }
         public RelayCommand RefreshCommand { get; private set; }
         public RelayCommand AddImageCommand { get; }
+        public RelayCommand ToggleDetailCommand { get; }
+        public RelayCommand ToggleTreeCommand { get; }
         public RelayCommand<IFileInfo> RemoveImageCommand { get; private set; }
 
         public MenuPageViewModel(IQiniuManager qiniuManager, IMimeTypeManager mimeTypeManager)
@@ -51,6 +53,9 @@ namespace Workshop.ViewModel
             this.AddImageCommand = new RelayCommand(AddImageAction);
             this.RemoveImageCommand = new RelayCommand<IFileInfo>(RemoveImageAction);
 
+            this.ToggleDetailCommand = new RelayCommand(ToggleDetailAction);
+            this.ToggleTreeCommand = new RelayCommand(ToggleTreeAction);
+
 
             //init data
             this.NavigationStack = new ObservableCollectionEx<ExplorerItem>();
@@ -60,6 +65,16 @@ namespace Workshop.ViewModel
             this.PathList = new ObservableCollectionEx<string>();
             InitData();
 
+        }
+
+        private void ToggleTreeAction()
+        {
+            this.IsShowTree = !this.IsShowTree;
+        }
+
+        private void ToggleDetailAction()
+        {
+            this.IsShowDetail = !this.IsShowDetail;
         }
 
         private void RefreshAction()
@@ -91,16 +106,7 @@ namespace Workshop.ViewModel
 
 
             var targetPath = this.CurrentExplorerItem.Path + SpliterChar + keyword;
-
-            if (targetPath.StartsWith(Rootname))
-            {
-                targetPath = targetPath.Substring(Rootname.Length, targetPath.Length - Rootname.Length);
-            }
-
-            if (targetPath.StartsWith(SpliterChar))
-            {
-                targetPath = targetPath.Substring(1, targetPath.Length - 1);
-            }
+            targetPath = EnsureOriginUrl(targetPath);
 
             var targetDirectoryPath = Path.GetDirectoryName(targetPath + SpliterChar);
             if (targetDirectoryPath == null)
@@ -117,6 +123,21 @@ namespace Workshop.ViewModel
             currentFileInfos.CollectionChanged += FileInfos_CollectionChangedAsync;
             this.CurrentFileInfos = currentFileInfos;
 
+        }
+
+        private string EnsureOriginUrl(string targetPath)
+        {
+            if (targetPath.StartsWith(Rootname))
+            {
+                targetPath = targetPath.Substring(Rootname.Length, targetPath.Length - Rootname.Length);
+            }
+
+            if (targetPath.StartsWith(SpliterChar))
+            {
+                targetPath = targetPath.Substring(1, targetPath.Length - 1);
+            }
+
+            return targetPath;
         }
 
         private async void SearchAction(string keyword)
@@ -223,7 +244,10 @@ namespace Workshop.ViewModel
                 case NotifyCollectionChangedAction.Add:
                     var item = e.NewItems[0] as IFileInfo;
                     var callbackBody = string.Format("key=$(key)&hash=$(etag)&bucket=$(bucket)&fsize=$(fsize)");
-                    var uploadResult = await _qiniuManager.UploadSingle(item.Path, item.FileName, callbackBody);
+
+                    var filename = EnsureOriginUrl(item.FileName);
+
+                    var uploadResult = await _qiniuManager.UploadSingle(item.Path, filename, callbackBody);
                     if (uploadResult)
                     {
                         await this.RefreshCurrentFileInfosAsync();
@@ -600,6 +624,31 @@ namespace Workshop.ViewModel
 
             }
         }
+
+        private bool _isShowTree;
+
+        public bool IsShowTree
+        {
+            get { return _isShowTree; }
+            set
+            {
+                _isShowTree = value;
+                OnPropertyChanged(nameof(IsShowTree));
+            }
+        }
+        private bool _isShowDetail;
+
+        public bool IsShowDetail
+        {
+            get { return _isShowDetail; }
+            set
+            {
+                _isShowDetail = value;
+                OnPropertyChanged(nameof(IsShowDetail));
+
+            }
+        }
+
 
     }
 }

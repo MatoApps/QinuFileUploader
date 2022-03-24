@@ -36,19 +36,18 @@
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal" >
                 <Button Style="{StaticResource NavigationBarButtonStyle}"  Command="{Binding NavigationHistoryBackCommand}"  Margin="10">
-                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE72B;"/>
+                    <FontIcon Style="{StaticResource NavigationBarButtonTextStyle}" Glyph="&#xE72B;"/>
                 </Button>
                 <Button  Style="{StaticResource NavigationBarButtonStyle}"  Command="{Binding NavigationHistoryForwardCommand}"  Margin="10" >
-                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE72A;"/>
+                    <FontIcon Style="{StaticResource NavigationBarButtonTextStyle}" Glyph="&#xE72A;"/>
 
                 </Button>
                 <Button  Style="{StaticResource NavigationBarButtonStyle}"  Command="{Binding NavigationBackCommand}"  Margin="10" >
-                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE74A;"/>
+                    <FontIcon Style="{StaticResource NavigationBarButtonTextStyle}" Glyph="&#xE74A;"/>
 
                 </Button>
                 <Button  Style="{StaticResource NavigationBarButtonStyle}"   Command="{Binding RefreshCommand}"  Margin="10" >
-                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE72C;"/>
-
+                    <FontIcon Style="{StaticResource NavigationBarButtonTextStyle}" Glyph="&#xE72C;"/>
                 </Button>
             </StackPanel>
             <Grid Grid.Column="1">
@@ -95,16 +94,16 @@
                          Command="{Binding SearchCommand}" CommandParameter="{Binding KeyWord}" 
                         >
 
-                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE721;"/>
+                    <FontIcon Style="{StaticResource NavigationBarButtonTextStyle}" Glyph="&#xE721;"/>
 
                 </Button>
             </Grid>
         </Grid>
 
         <SplitView  Grid.Row="2" 
-                    IsPaneOpen="True" 
+                    IsPaneOpen="{Binding IsShowTree}" 
                     OpenPaneLength="256" 
-                    CompactPaneLength="48" 
+                    CompactPaneLength="48"  
                     PaneBackground="{ThemeResource ControlSolidFillColorDefaultBrush}"
                     DisplayMode="Inline">
             <SplitView.Pane>
@@ -144,7 +143,29 @@
                 <!--Folder Title-->
                 <Grid Grid.Row="0" Margin="12,0">
                     <TextBlock Style="{StaticResource HeaderTextBlockStyle}" Text="{Binding CurrentExplorerItem.Name}" VerticalAlignment="Center"></TextBlock>
+                    <StackPanel HorizontalAlignment="Right" 
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                         Margin="0,18">
+                        <ToggleButton
 
+                         Style="{StaticResource NavigationBarButtonStyle}" 
+                         Command="{Binding ToggleTreeCommand}" 
+                        >
+
+                            <FontIcon  FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xEA4C;"/>
+
+                        </ToggleButton>
+                        <ToggleButton
+
+                         Style="{StaticResource NavigationBarButtonStyle}" 
+                         Command="{Binding ToggleDetailCommand}"
+                        >
+
+                            <FontIcon  FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xEA4B;"/>
+
+                        </ToggleButton>
+                    </StackPanel>
 
                 </Grid>
 
@@ -176,6 +197,12 @@
                                   SelectedItem="{Binding SelectedFileInfo}"
                                   ItemClick="BasicGridView_ItemClick"
                                   SelectionMode="Single">
+                            <GridView.ItemContainerStyle>
+                                <Style TargetType="GridViewItem">
+                                    <Setter Property="Margin" Value="5, 7, 5, 7"/>
+                                </Style>
+                            </GridView.ItemContainerStyle>
+
                             <GridView.ItemTemplate>
                                 <DataTemplate>
                                     <Image Source="{Binding Path}" Width="90" Height="90" HorizontalAlignment="Center" VerticalAlignment="Center"/>

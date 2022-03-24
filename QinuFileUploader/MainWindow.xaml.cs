@@ -59,5 +59,6 @@ namespace QinuFileUploader
             (this.MainFrame.DataContext as MenuPageViewModel).SelectedFileInfo = (IFileInfo)e.ClickedItem;
 
         }
+
     }
 }

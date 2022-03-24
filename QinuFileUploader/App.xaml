@@ -32,11 +32,13 @@
                 <Setter Property="BorderThickness" Value="{ThemeResource NavigationViewToggleBorderThickness}" />
 
             </Style>
-
-            <Style x:Key="NavigationBarButtonStyle" TargetType="Button">
+            <Style x:Key="NavigationBarButtonStyle" TargetType="ButtonBase">
                 <Setter Property="BorderThickness" Value="{ThemeResource NavigationViewToggleBorderThickness}" />
                 <Setter Property="Background" Value="Transparent" />
-
+            </Style>
+            <Style x:Key="NavigationBarButtonTextStyle" TargetType="FontIcon">
+                <Setter Property="FontFamily" Value="{ThemeResource SymbolThemeFontFamily}" />
+                <Setter Property="FontSize" Value="14" />
             </Style>
             <Style x:Key="NavigationTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
                 <Setter Property="FontSize" Value="14" />
