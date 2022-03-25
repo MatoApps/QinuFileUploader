@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace QinuFileUploader.Model.LocalFile
 {
-    public class LocalFileInfo: IFileInfo
+    public class LocalFile: IFileInfo
     {
         public string FileName { get; set; }
         public string FileType { get; set; }

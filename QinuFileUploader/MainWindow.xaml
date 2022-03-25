@@ -165,6 +165,19 @@
                             <FontIcon  FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xEA4B;"/>
 
                         </ToggleButton>
+                        <Button
+                         Style="{StaticResource NavigationBarButtonStyle}" 
+                        >
+                            <FontIcon  FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE713;"/>
+                            <Button.Flyout>
+                                <Flyout>
+                                    <StackPanel>
+                                        <local:SettingsPage  Margin="0,0,0,12" />
+                                    </StackPanel>
+                                </Flyout>
+                            </Button.Flyout>
+
+                        </Button>
                     </StackPanel>
 
                 </Grid>

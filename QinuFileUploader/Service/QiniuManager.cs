@@ -23,13 +23,10 @@ namespace Workshop.Service.Manager
 {
     public class QiniuManager : IQiniuManager
     {
-        private int num = 1;
-
         private Mac mac;
         private Config config;
         private BucketManager bucketManager;
         private string marker;
-        private QiNiuClientCfg qiNiuClientCfg;
 
         private DomainsResult _currentDomain;
 
@@ -58,9 +55,9 @@ namespace Workshop.Service.Manager
             set { _bucket = value; }
         }
 
-        private List<QiNiuFileInfo> _fileInfos;
+        private List<QiniuFile> _fileInfos;
 
-        public List<QiNiuFileInfo> FileInfos
+        public List<QiniuFile> FileInfos
         {
             get { return _fileInfos; }
             set { _fileInfos = value; }
@@ -70,24 +67,19 @@ namespace Workshop.Service.Manager
 
         public QiniuManager()
         {
-            qiNiuClientCfg = new QiNiuClientCfg();
             BucketList = new List<string>();
-            FileInfos = new List<QiNiuFileInfo>();
+            FileInfos = new List<QiniuFile>();
         }
 
-        public IEnumerable<QiniuArea> GetQiniuAreas()
+        public IEnumerable<QiniuRegion> QiniuRegions()
         {
-            return QiniuArea.GetList();
+            return QiniuRegion.GetRegionList();
         }
-        /// <summary>
-        /// 连接
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public async Task<List<string>> ConnectServer(string TxtAK, string TxtSK, Zone zone)
+
+        public async Task<List<string>> ConnectServer(string StorageAppKey, string DefaultStorageAppSecret, Zone zone)
         {
 
-            if (string.IsNullOrWhiteSpace(TxtAK) || string.IsNullOrWhiteSpace(TxtSK))
+            if (string.IsNullOrWhiteSpace(StorageAppKey) || string.IsNullOrWhiteSpace(DefaultStorageAppSecret))
             {
                 return null;
             }
@@ -97,16 +89,9 @@ namespace Workshop.Service.Manager
                 BucketList.Clear();
             }
 
-
-
-            //根据AK和SK连接七牛云存储，1.获得存储空间列表；2.若成功本机保存Ak和SK
-            Qiniu.Storage.Config.DefaultRsHost = "rs.qiniu.com";
-            if (!TxtAK.Contains("*") && !TxtSK.Contains("*"))
-            {
-                qiNiuClientCfg.Ak = TxtAK.Trim();
-                qiNiuClientCfg.Sk = TxtSK.Trim();
-            }
-            mac = new Mac(qiNiuClientCfg.Ak, qiNiuClientCfg.Sk);
+            Config.DefaultRsHost = "rs.qiniu.com";
+           
+            mac = new Mac(StorageAppKey, DefaultStorageAppSecret);
             config = new Config { Zone = Zone.ZONE_CN_East };
             if (zone != null)
             {
@@ -119,8 +104,6 @@ namespace Workshop.Service.Manager
             this.BucketList.Clear();
             IsBusy = true;
 
-            // new Thread(this.reloadBuckets).Start();
-            //使用线程池
             return await Task.Run(() =>
             {
                 BucketsResult bucketsResult = bucketManager.Buckets(true);
@@ -139,22 +122,15 @@ namespace Workshop.Service.Manager
                 return this.BucketList;
             });
         }
-        /// <summary>
-        /// 查询
-        /// </summary>
-        public async Task<List<QiNiuFileInfo>> Search(string bucket, string keyword)
+
+        public async Task<List<QiniuFile>> Search(string bucket, string keyword)
         {
             if (IsBusy == true)
             {
                 return null;
             }
 
-            List<QiNiuFileInfo> qiNiuFileInfoList = new List<QiNiuFileInfo>(); ;
-
-            if (string.IsNullOrWhiteSpace(marker))
-            {
-                num = 1;
-            }
+            List<QiniuFile> qiNiuFileInfoList = new List<QiniuFile>(); ;
 
             var startWith = keyword.Trim();
             return await Task.Run(() =>
@@ -176,15 +152,15 @@ namespace Workshop.Service.Manager
                     foreach (ListItem item in listResult.Result.Items)
                     {
                         // item.EndUser
-                        QiNiuFileInfo f = new QiNiuFileInfo
+                        QiniuFile f = new QiniuFile
                         {
 
                             FileName = item.Key,
                             FileType = item.MimeType,
-                            StorageType = QiNiuHelper.GetStorageType(item.FileType),
-                            FileSize = QiNiuHelper.GetFileSize(item.Fsize),
+                            StorageType = QiniuHelper.GetStorageType(item.FileType),
+                            FileSize = QiniuHelper.GetFileSize(item.Fsize),
                             EndUser = item.EndUser,
-                            CreateDate = QiNiuHelper.GetDataTime(item.PutTime)
+                            CreateDate = QiniuHelper.GetDataTime(item.PutTime)
                         };
                         qiNiuFileInfoList.Add(f);
 
@@ -192,13 +168,12 @@ namespace Workshop.Service.Manager
 
                     if (qiNiuFileInfoList.Count > 0)
                     {
-                        num = 1;
                         qiNiuFileInfoList = qiNiuFileInfoList.OrderByDescending(t => t.CreateDate).ToList();                    
                         FileInfos = qiNiuFileInfoList;
                     }
                     else
                     {
-                        FileInfos = new List<QiNiuFileInfo>();
+                        FileInfos = new List<QiniuFile>();
                     }
                 }
                 else
@@ -213,14 +188,11 @@ namespace Workshop.Service.Manager
 
         public async Task<DomainsResult> SetCurrentDomain(string bucket)
         {
-            num = 1;
             marker = "";
             return await Task.Run(() =>
             {
                 if (!string.IsNullOrEmpty(bucket))
                 {
-                    //多线程处理
-
                     CurrentDomain = bucketManager.Domains(bucket);
                     return CurrentDomain;
                 }
@@ -232,41 +204,29 @@ namespace Workshop.Service.Manager
             });
         }
 
-        /// <summary>
-        /// 批量下载
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param> 
-        public void DownLoad(List<QiNiuFileInfo> list, string fileSaveDir)
+
+        public void DownLoad(List<QiniuFile> list, string fileSaveDir)
         {
             if (IsBusy == true)
             {
                 return;
             }
-            //选择下载保存的路径
             if (list.Count > 0)
             {
-                //执行批量下载方法
-                //使用线程池
                 IsBusy = true;
-
                 ThreadPool.QueueUserWorkItem(async state =>
                 {
                     if (CurrentDomain.Result.Count > 0)
                     {
 
                         string domain = CurrentDomain.Result[0];
-                        //string key = "hello/world/七牛/test.png";
-                        //string privateUrl = DownloadManager.CreatePrivateUrl(mac, domain, key, 3600);
 
                         domain = config.UseHttps ? "https://" + domain : "http://" + domain;
 
                         var rresult = new StringBuilder();
 
-                        foreach (QiNiuFileInfo info in list)
+                        foreach (QiniuFile info in list)
                         {
-                            // string pubfile = DownloadManager.CreatePublishUrl(domain, info.FileName);
-
                             string pubfile = GetPublishUrl(info.FileName);
                             if (string.IsNullOrWhiteSpace(pubfile))
                             {
@@ -305,17 +265,14 @@ namespace Workshop.Service.Manager
 
             IsBusy = false;
         }
-        /// <summary>
-        /// 批量删除
-        /// </summary>
-        /// <param name="list"></param>
-        public async Task<bool> Delete(List<QiNiuFileInfo> list)
+   
+
+        public async Task<bool> Delete(List<QiniuFile> list)
         {
             return await Task.Run(() =>
             {
                 if (list.Count > 0)
                 {
-                    //执行批量删除
                     List<string> ops = new List<string>();
                     foreach (var key in list)
                     {
@@ -341,22 +298,20 @@ namespace Workshop.Service.Manager
                 }
             });
         }
-        /// <summary>
-        /// 修改DeleteAfterDays
-        /// </summary>
-        public async Task<bool> EditDeleteAfterDays(List<QiNiuFileInfo> list, int deleteAfterDays)
+
+
+        public async Task<bool> EditDeleteAfterDays(List<QiniuFile> list, int deleteAfterDays=0)
         {
             return await Task.Run(() =>
               {
                   if (list.Count > 0)
                   {
                       string[] urls = new string[list.Count];
-                      qiNiuClientCfg.DeleteAfterDays = deleteAfterDays;
 
                       var result = false;
-                      foreach (QiNiuFileInfo qiNiuFileInfo in list)
+                      foreach (QiniuFile qiNiuFileInfo in list)
                       {
-                          HttpResult expireRet = bucketManager.DeleteAfterDays(Bucket, qiNiuFileInfo.FileName, qiNiuClientCfg.DeleteAfterDays.Value);
+                          HttpResult expireRet = bucketManager.DeleteAfterDays(Bucket, qiNiuFileInfo.FileName, deleteAfterDays);
                           result &= expireRet.Code == (int)HttpCode.OK;
 
                       }
@@ -369,14 +324,15 @@ namespace Workshop.Service.Manager
                   }
               });
         }
-        public async Task<bool> RefreshNetAddress(List<QiNiuFileInfo> list)
+        
+        public async Task<bool> RefreshNetAddress(List<QiniuFile> list)
         {
             if (list.Count > 0)
             {
                 string[] urls = new string[list.Count];
                 for (var i = 0; i < list.Count; i++)
                 {
-                    QiNiuFileInfo qiNiuFileInfo = list[i];
+                    QiniuFile qiNiuFileInfo = list[i];
 
                     urls[i] = GetPublishUrl(qiNiuFileInfo.FileName);
                     if (string.IsNullOrWhiteSpace(urls[i]))
@@ -386,7 +342,7 @@ namespace Workshop.Service.Manager
                 }
                 return await Task.Run(() =>
                 {
-                    bool result = QiNiuHelper.RefreshUrls(mac, urls);
+                    bool result = QiniuHelper.RefreshUrls(mac, urls);
 
                     return result;
 
@@ -424,6 +380,7 @@ namespace Workshop.Service.Manager
 
 
         }
+        
         private string GetPrivateUrl(string fileName)
         {
             if (CurrentDomain?.Result?.Count > 0)
@@ -447,14 +404,9 @@ namespace Workshop.Service.Manager
 
 
         }
-        /// <summary>
-        /// 批量上传
-        /// </summary>
-        /// <param name="fileUploadFiles"></param>
-        /// <param name="key"></param>
-        /// <param name="overlay"></param>
-        /// <returns></returns>
-        public async Task<bool> Upload(string[] fileUploadFiles, string callbackBody, bool overlay = true)
+
+
+        public async Task<bool> Upload(string[] fileUploadFiles, string callbackUrl,string callbackBody, bool overlay = true)
         {
             return await Task.Run(() =>
             {
@@ -495,7 +447,7 @@ namespace Workshop.Service.Manager
                     foreach (string file in fileUploadFiles)
                     {
                         var key = Path.GetFileName(file);
-                        var currentResult = UploadFile(file, key, callbackBody, true);
+                        var currentResult = UploadFile(file, key, callbackUrl, callbackBody, true);
                         var currentDataResult = false;
                         if (currentResult.Errorno == CommonResultInfo.SUCCESS)
                         {
@@ -528,7 +480,7 @@ namespace Workshop.Service.Manager
                     foreach (string file in fileUploadFiles)
                     {
                         var key = Path.GetFileName(file);
-                        var currentResult = UploadFile(file, key, callbackBody);
+                        var currentResult = UploadFile(file, key, callbackUrl,callbackBody);
                         var currentDataResult = false;
                         if (currentResult.Errorno == CommonResultInfo.SUCCESS)
                         {
@@ -558,14 +510,7 @@ namespace Workshop.Service.Manager
             });
         }
 
-        /// <summary>
-        /// 上传单个文件
-        /// </summary>
-        /// <param name="fileUploadFile"></param>
-        /// <param name="key"></param>
-        /// <param name="overlay"></param>
-        /// <returns></returns>
-        public async Task<bool> UploadSingle(string fileUploadFile, string key, string callbackBody, bool overlay = true)
+        public async Task<bool> UploadSingle(string fileUploadFile, string key, string callbackUrl,string callbackBody, bool overlay = true)
         {
             return await Task.Run(async () =>
             {
@@ -582,7 +527,7 @@ namespace Workshop.Service.Manager
                     key = Path.GetFileName(fileUploadFile);
                 }
 
-                var result = await UploadFileResumable(fileUploadFile, key, callbackBody, overlay);
+                var result = await UploadFileResumable(fileUploadFile, key, callbackUrl, callbackBody, overlay);
                 IsBusy = false;
 
                 if (result.Errorno == CommonResultInfo.SUCCESS)
@@ -606,8 +551,7 @@ namespace Workshop.Service.Manager
             });
         }
 
-
-        private async Task<ICommonResultInfo> UploadFileResumable(string file, string key, string callbackBody, bool overLay = false)
+        private async Task<ICommonResultInfo> UploadFileResumable(string file, string key, string callbackUrl,string callbackBody, bool overLay = false)
         {
             ICommonResultInfo commonResultInfo;
             var putPolicy = new PutPolicy();
@@ -648,21 +592,12 @@ namespace Workshop.Service.Manager
                     }
                     putPolicy.SetExpires(3600);
 
-                    putPolicy.DeleteAfterDays = qiNiuClientCfg.DeleteAfterDays;
+                    putPolicy.DeleteAfterDays = 0;
 
-                    var baseAddr = "";
-                    var basePort = "";
-                    var url = "Dish/StorageHandler.ashx/ImageUploadFinishedReq";
+       
 
-                    var baseProtocol = "http";
-                    if (basePort == "443")
-                    {
-                        baseProtocol = "https";
-                    }
-                    var fullUrl = string.Format("{0}://{1}:{2}/Handlers/{3}", baseProtocol, baseAddr, basePort, url);
-
-                    putPolicy.CallbackUrl = fullUrl;
-                    putPolicy.CallbackBody = callbackBody;
+                    putPolicy.CallbackUrl = callbackUrl;
+                    putPolicy.CallbackBody = callbackUrl;
                     putPolicy.CallbackBodyType = "application/x-www-form-urlencoded";
 
 
@@ -694,14 +629,13 @@ namespace Workshop.Service.Manager
             return commonResultInfo;
         }
 
-        private ICommonResultInfo UploadFile(string file, string key, string callbackBody, bool overlay = false)
+        private ICommonResultInfo UploadFile(string file, string key, string callbackUrl,string callbackBody, bool overlay = false)
         {
             ICommonResultInfo commonResultInfo;
             var putPolicy = new PutPolicy();
 
             if (putPolicy != null)
             {
-                //上传限制10M
                 putPolicy.FsizeLimit = 1024 * 1024 * 100;
                 if (overlay)
                 {
@@ -713,20 +647,11 @@ namespace Workshop.Service.Manager
                 }
                 putPolicy.SetExpires(3600);
 
-                putPolicy.DeleteAfterDays = qiNiuClientCfg.DeleteAfterDays;
+                putPolicy.DeleteAfterDays = 0;
 
-                var baseAddr = "";
-                var basePort = "";
-                var url = "Dish/StorageHandler.ashx/ImageUploadFinishedReq";
+              
 
-                var baseProtocol = "http";
-                if (basePort == "443")
-                {
-                    baseProtocol = "https";
-                }
-                var fullUrl = string.Format("{0}://{1}:{2}/Handlers/{3}", baseProtocol, baseAddr, basePort, url);
-
-                putPolicy.CallbackUrl = fullUrl;
+                putPolicy.CallbackUrl = callbackUrl;
                 putPolicy.CallbackBody = callbackBody;
                 putPolicy.CallbackBodyType = "application/x-www-form-urlencoded";
 
@@ -785,7 +710,7 @@ namespace Workshop.Service.Manager
         /// <param name="sender"></param>
         /// <param name="e"></param>
 
-        public string GetPreviewAddress(List<QiNiuFileInfo> list)
+        public string GetPreviewAddress(List<QiniuFile> list)
         {
             var result = "";
             if (list.Count > 0)
@@ -803,14 +728,14 @@ namespace Workshop.Service.Manager
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        public void Rename(List<QiNiuFileInfo> list, string txtRename)
+        public void Rename(List<QiniuFile> list, string txtRename)
         {
             if (list.Count > 0)
             {
                 if (!string.IsNullOrWhiteSpace(Bucket) && !string.IsNullOrWhiteSpace(list[0].FileName) &&
                 !string.IsNullOrWhiteSpace(txtRename.Trim()))
                 {
-                    QiNiuHelper.Move(bucketManager, Bucket, list[0].FileName, Bucket, txtRename.Trim());
+                    QiniuHelper.Move(bucketManager, Bucket, list[0].FileName, Bucket, txtRename.Trim());
                 }
             }
         }

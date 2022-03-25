@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Workshop.Model.Qiniu
 {
-    public class QiNiuFileInfo : IFileInfo
+    public class QiniuFile : IFileInfo
     {
         private const string qiniuFolderType = "application/qiniu-object-manager";
 

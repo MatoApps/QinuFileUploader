@@ -37,10 +37,13 @@ namespace Workshop.ViewModel
         public RelayCommand ToggleTreeCommand { get; }
         public RelayCommand<IFileInfo> RemoveImageCommand { get; private set; }
 
-        public MenuPageViewModel(IQiniuManager qiniuManager, IMimeTypeManager mimeTypeManager)
+        public MenuPageViewModel(IQiniuManager qiniuManager, IMimeTypeManager mimeTypeManager, SettingsPageViewModel settingsPageViewModel)
         {
             this._qiniuManager = qiniuManager;
             _mimeTypeManager = mimeTypeManager;
+
+            settingsPageViewModel.OnSubmit += SettingsPageViewModel_OnSubmit;
+
             this.PropertyChanged += MenuPageViewModel_PropertyChanged;
 
             //init commands
@@ -65,6 +68,11 @@ namespace Workshop.ViewModel
             this.PathList = new ObservableCollectionEx<string>();
             InitData();
 
+        }
+
+        private void SettingsPageViewModel_OnSubmit(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         private void ToggleTreeAction()
@@ -148,8 +156,11 @@ namespace Workshop.ViewModel
 
         private async void InitData(string keyword = "")
         {
-            var storageSK = ConfigureProvider.StorageAppSecret;
-            await Bucket(storageSK);
+            var storageSK = ConfigureProvider.SettingInfo.StorageAppSecret;
+            if (!await Bucket(storageSK))
+            {
+                return;
+            };
             var fgalleryList = await _qiniuManager.Search(_qiniuManager.Bucket, keyword);
 
             var folders = fgalleryList.Where(c => c.IsFolder).GroupBy(c => c.FileName).Select(c => c.Key).ToList();
@@ -243,11 +254,12 @@ namespace Workshop.ViewModel
             {
                 case NotifyCollectionChangedAction.Add:
                     var item = e.NewItems[0] as IFileInfo;
-                    var callbackBody = string.Format("key=$(key)&hash=$(etag)&bucket=$(bucket)&fsize=$(fsize)");
+                    var callbackBody = ConfigureProvider.SettingInfo.CallbackBody;
+                    var callbackUrl = ConfigureProvider.SettingInfo.CallbackUrl;
 
                     var filename = EnsureOriginUrl(item.FileName);
 
-                    var uploadResult = await _qiniuManager.UploadSingle(item.Path, filename, callbackBody);
+                    var uploadResult = await _qiniuManager.UploadSingle(item.Path, filename, callbackUrl, callbackBody);
                     if (uploadResult)
                     {
                         await this.RefreshCurrentFileInfosAsync();
@@ -260,7 +272,7 @@ namespace Workshop.ViewModel
                     }
                     break;
                 case NotifyCollectionChangedAction.Remove:
-                    var deleteResult = await _qiniuManager.Delete(new List<Model.Qiniu.QiNiuFileInfo>() { e.OldItems[0] as Model.Qiniu.QiNiuFileInfo });
+                    var deleteResult = await _qiniuManager.Delete(new List<Model.Qiniu.QiniuFile>() { e.OldItems[0] as Model.Qiniu.QiniuFile });
                     if (deleteResult)
                     {
                         await this.RefreshCurrentFileInfosAsync();
@@ -308,11 +320,11 @@ namespace Workshop.ViewModel
             var basicProp = await file.GetBasicPropertiesAsync();
             var filename = this.CurrentExplorerItem.Path + SpliterChar + file.Name;
             var fileType = _mimeTypeManager.GetMimeType(file.FileType);
-            var localfile = new LocalFileInfo()
+            var localfile = new LocalFile()
             {
                 FileName = filename,
                 FileType = fileType,
-                FileSize = QiNiuHelper.GetFileSize((long)basicProp.Size),
+                FileSize = QiniuHelper.GetFileSize((long)basicProp.Size),
                 CreateDate = basicProp.ItemDate.ToString("yyyy/MM/dd HH:mm:ss"),
                 Path = file.Path,
             };
@@ -321,12 +333,17 @@ namespace Workshop.ViewModel
         }
 
 
-        private async Task Bucket(string storageSK)
+        private async Task<bool> Bucket(string storageSK)
         {
-            var currentArea = _qiniuManager.GetQiniuAreas().First(c => c.Name == "华南");
-            var bucketList = await _qiniuManager.ConnectServer(ConfigureProvider.StorageAppKey, storageSK, currentArea.ZoneValue);
-
+            var currentArea = ConfigureProvider.SettingInfo.StorageRegion;
+            var bucketList = await _qiniuManager.ConnectServer(ConfigureProvider.SettingInfo.StorageAppKey, storageSK, currentArea.Value);
+            if (bucketList.Count == 0)
+            {
+                await UIHelper.ShowAsync("没有找到Bucket列表，请填写正确的AppKey和AppSecret");
+                return false;
+            }
             _qiniuManager.Bucket = bucketList.First();
+            return true;
         }
 
 

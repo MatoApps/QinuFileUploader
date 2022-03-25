@@ -3,13 +3,39 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Workshop.Model;
+using Workshop.Model.Qiniu;
+using Workshop.Service;
 
 namespace QinuFileUploader.Common
 {
-    public class ConfigureProvider
+    public static class ConfigureProvider
     {
-        public static string AppKey = "670b14728ad9902aecba32e22fa4f6bd";
-        public static string StorageAppKey = "N71eJmVgAqwc33hL4waKz4xB1L-MlvhX8V8B0w__";
-        public static string StorageAppSecret = "Xh9-pUhfIeEiWW2CrbmbP_6uNrP1BtDhB7eBBioK";
+        public const string DefaultStorageAppKey = "[请填写AppKey]";
+        public const string DefaultStorageAppSecret = "[请填写AppSecret]";
+        public const string DefaultCallbackBody = "key=$(key)&hash=$(etag)&bucket=$(bucket)&fsize=$(fsize)";
+        public const string DefaultCallbackUrl = "";
+
+
+        public static SettingInfo SettingInfo;
+
+        static ConfigureProvider()
+        {
+            var settingInfo = LocalDataHelper.ReadObjectLocal<SettingInfo>();
+            if (settingInfo == null)
+            {
+                settingInfo = new SettingInfo()
+                {
+                    StorageAppKey = DefaultStorageAppKey,
+                    StorageAppSecret = DefaultStorageAppSecret,
+                    StorageRegion = QiniuRegion.GetRegionList().First(c => c.Title == "华南"),
+                    CallbackBody = DefaultCallbackBody,
+                    CallbackUrl = DefaultCallbackUrl
+                };
+                LocalDataHelper.SaveObjectLocal(settingInfo);
+
+            }
+            SettingInfo = settingInfo;
+        }
     }
 }

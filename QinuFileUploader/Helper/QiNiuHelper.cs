@@ -12,7 +12,7 @@ using Workshop.Infrastructure.Common;
 
 namespace Workshop.Infrastructure.Helper
 {
-    public class QiNiuHelper
+    public class QiniuHelper
     {
         public static string GetStorageType(int type)
         {
