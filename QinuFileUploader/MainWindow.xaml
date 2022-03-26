@@ -52,7 +52,7 @@
             </StackPanel>
             <Grid Grid.Column="1">
                 <SplitButton x:Name="myColorButton"
-                             
+                             Height="38"
                              VerticalAlignment="Center"
                              HorizontalAlignment="Stretch">
                     <Grid>
@@ -83,6 +83,7 @@
 
                 <TextBox x:Name="CurrentText" 
                          VerticalAlignment="Center"
+                             Height="38"
                          Width="200"
                          Text="{Binding KeyWord, Mode=TwoWay}"
                          TextWrapping="Wrap">
@@ -108,7 +109,9 @@
                     DisplayMode="Inline">
             <SplitView.Pane>
                 <Grid Grid.Column="0" MinWidth="320">
-                    <TreeView ItemsSource="{Binding RootExplorerItems}" SelectedItem="{Binding CurrentExplorerItem ,Mode=TwoWay}"
+                    <TreeView
+                         Visibility="{Binding CurrentFileInfos, Converter={StaticResource nullToVisibilityConverter}}"
+                        ItemsSource="{Binding RootExplorerItems}" SelectedItem="{Binding CurrentExplorerItem ,Mode=TwoWay}"
                               ItemInvoked="TreeView_ItemInvoked"
                               SelectionMode="Single" 
                               Margin="0,12"
@@ -129,14 +132,16 @@
                                 </TreeViewItem>
                             </DataTemplate>
                         </TreeView.ItemTemplate>
-                    </TreeView>
 
+                    </TreeView>
+                    <StackPanel  Visibility="{Binding CurrentFileInfos, Converter={StaticResource inverseNullToVisibilityConverter}}">
+
+                        <TextBlock Margin="0,128" HorizontalAlignment="Center" Text="没有内容"></TextBlock>
+                    </StackPanel>
                 </Grid>
             </SplitView.Pane>
-
             <Grid >
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"></RowDefinition>
                     <RowDefinition Height="Auto"></RowDefinition>
                     <RowDefinition Height="1*"></RowDefinition>
                 </Grid.RowDefinitions>
@@ -148,7 +153,7 @@
                                 VerticalAlignment="Center"
                          Margin="0,18">
                         <ToggleButton
-
+                             IsChecked="{Binding IsShowTree}"
                          Style="{StaticResource NavigationBarButtonStyle}" 
                          Command="{Binding ToggleTreeCommand}" 
                         >
@@ -157,6 +162,7 @@
 
                         </ToggleButton>
                         <ToggleButton
+                             IsChecked="{Binding IsShowDetail}"
 
                          Style="{StaticResource NavigationBarButtonStyle}" 
                          Command="{Binding ToggleDetailCommand}"
@@ -181,28 +187,109 @@
                     </StackPanel>
 
                 </Grid>
+                <SplitView Grid.Row="1"
+                    IsPaneOpen="{Binding IsShowDetail}" 
+                    OpenPaneLength="256" 
+                    PaneBackground="{ThemeResource SolidBackgroundFillColorTertiary}"
+                          DisplayMode="Inline"   
+                            PanePlacement="Right"
+                    CompactPaneLength="48" >
 
-                <!--Command Bar-->
-                <Grid Grid.Row="1">
-                    <CommandBar Background="Transparent" HorizontalAlignment="Left" IsOpen="False" DefaultLabelPosition="Right">
-                        <AppBarButton Icon="Add" Label="上传"  Command="{Binding AddImageCommand}"/>
-                        <AppBarButton Icon="Delete" Label="删除"  Command="{ Binding RemoveImageCommand}" CommandParameter="{Binding SelectedFileInfo}" />
+                    <SplitView.Pane>
+                        <Grid  Grid.Column="1"  VerticalAlignment="Stretch">
+                            <StackPanel   Visibility="{Binding SelectedFileInfo, Converter={StaticResource nullToVisibilityConverter}}">
+                                <Grid Margin="12,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"></ColumnDefinition>
+                                        <ColumnDefinition></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
 
-                    </CommandBar>
+                                    <FontIcon  Style="{StaticResource DetailIconTextStyle}" Glyph="&#xE7C3;"/>
 
-                </Grid>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedFileInfo.FileName}" TextWrapping="Wrap"></TextBlock>
 
-                <!--File Content-->
-                <Grid Grid.Row="2" Margin="0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition></ColumnDefinition>
-                        <ColumnDefinition Width="256"></ColumnDefinition>
-                    </Grid.ColumnDefinitions>
+                                </Grid>
+
+                                <Grid Margin="12,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"></ColumnDefinition>
+                                        <ColumnDefinition></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
+
+                                    <FontIcon Style="{StaticResource DetailIconTextStyle}" Glyph="&#xE946;"/>
+
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedFileInfo.FileType}" TextWrapping="Wrap"></TextBlock>
+
+                                </Grid>
+
+                                <Grid Margin="12,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"></ColumnDefinition>
+                                        <ColumnDefinition></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
+
+                                    <FontIcon Style="{StaticResource DetailIconTextStyle}" Glyph="&#xEE94;"/>
+
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedFileInfo.FileSize}" TextWrapping="Wrap"></TextBlock>
+
+                                </Grid>
+
+                                <Grid Margin="12,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"></ColumnDefinition>
+                                        <ColumnDefinition></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
+
+                                    <FontIcon Style="{StaticResource DetailIconTextStyle}" Glyph="&#xED5A;"/>
+
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedFileInfo.CreateDate}" TextWrapping="Wrap"></TextBlock>
+
+                                </Grid>
+
+                                <Grid Margin="12,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"></ColumnDefinition>
+                                        <ColumnDefinition></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
+
+                                    <FontIcon Style="{StaticResource DetailIconTextStyle}" Glyph="&#xE8CE;"/>
+
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedFileInfo.Path}" TextWrapping="Wrap"></TextBlock>
+
+                                </Grid>
+
+                            </StackPanel>
+                            <StackPanel  Visibility="{Binding SelectedFileInfo, Converter={StaticResource inverseNullToVisibilityConverter}}">
+
+                                <TextBlock Margin="0,128" HorizontalAlignment="Center" Text="选择项目以查看详情"></TextBlock>
+                            </StackPanel>
+                        </Grid>
+
+                    </SplitView.Pane>
 
                     <!--File Grid-->
                     <Grid>
 
-                        <GridView
+                        <Grid >
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"></RowDefinition>
+                                <RowDefinition Height="1*"></RowDefinition>
+                            </Grid.RowDefinitions>
+
+                            <!--Command Bar-->
+                            <Grid Grid.Row="0">
+                                <CommandBar Background="Transparent" HorizontalAlignment="Left" IsOpen="False" DefaultLabelPosition="Right">
+                                    <AppBarButton Icon="Add" Label="上传"  Command="{Binding AddImageCommand}"/>
+                                    <AppBarButton Icon="Delete" Label="删除"  Command="{ Binding RemoveImageCommand}" CommandParameter="{Binding SelectedFileInfo}" />
+
+                                </CommandBar>
+
+                            </Grid>
+
+                            <!--File Content-->
+
+
+                            <GridView Grid.Row="1"
                                   x:Name="BasicGridView"
                                   IsItemClickEnabled="True"
                                   ItemsSource="{Binding CurrentFileInfos}"
@@ -210,35 +297,25 @@
                                   SelectedItem="{Binding SelectedFileInfo}"
                                   ItemClick="BasicGridView_ItemClick"
                                   SelectionMode="Single">
-                            <GridView.ItemContainerStyle>
-                                <Style TargetType="GridViewItem">
-                                    <Setter Property="Margin" Value="5, 7, 5, 7"/>
-                                </Style>
-                            </GridView.ItemContainerStyle>
+                                <GridView.ItemContainerStyle>
+                                    <Style TargetType="GridViewItem">
+                                        <Setter Property="Margin" Value="5, 7, 5, 7"/>
+                                    </Style>
+                                </GridView.ItemContainerStyle>
 
-                            <GridView.ItemTemplate>
-                                <DataTemplate>
-                                    <Image Source="{Binding Path}" Width="90" Height="90" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </DataTemplate>
-                            </GridView.ItemTemplate>
-                        </GridView>
+                                <GridView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Image Source="{Binding Path}" Width="90" Height="90" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </GridView.ItemTemplate>
+                            </GridView>
+
+                        </Grid>
 
                     </Grid>
-
-                    <!--File Info-->
-                    <StackPanel Grid.Column="1">
-                        <TextBlock Text="{Binding SelectedFileInfo.FileName}"></TextBlock>
-                        <TextBlock Text="{Binding SelectedFileInfo.FileType}"></TextBlock>
-                        <TextBlock Text="{Binding SelectedFileInfo.FileSize}"></TextBlock>
-                        <TextBlock Text="{Binding SelectedFileInfo.CreateDate}"></TextBlock>
-                        <TextBlock Text="{Binding SelectedFileInfo.Path}"></TextBlock>
-
-                    </StackPanel>
-
-                </Grid>
+                </SplitView>
 
             </Grid>
-
         </SplitView>
 
     </Grid>

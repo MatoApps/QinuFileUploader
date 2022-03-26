@@ -25,6 +25,7 @@
   <ItemGroup>
     <None Remove="Assets\folder.png" />
     <None Remove="Assets\imageLoad.png" />
+    <None Remove="View\BucketListPage.xaml" />
     <None Remove="View\SettingsPage.xaml" />
   </ItemGroup>
 
@@ -70,6 +71,9 @@
     <Folder Include="Assets\Fonts\" />
   </ItemGroup>
   <ItemGroup>
+    <Page Update="View\BucketListPage.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+    </Page>
     <Page Update="View\SettingsPage.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
     </Page>

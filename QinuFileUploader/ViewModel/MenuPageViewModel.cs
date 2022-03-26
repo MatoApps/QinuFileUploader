@@ -17,6 +17,8 @@ using QinuFileUploader.Service;
 using Workshop.Infrastructure.Common;
 using Workshop.Infrastructure.Helper;
 using Workshop.Service.Manager;
+using QinuFileUploader;
+using Microsoft.UI.Xaml.Controls;
 
 namespace Workshop.ViewModel
 {
@@ -25,7 +27,7 @@ namespace Workshop.ViewModel
         private readonly IQiniuManager _qiniuManager;
         private readonly IMimeTypeManager _mimeTypeManager;
 
-        private const string Rootname = "我的网盘";
+        private string Rootname;
         private const char SpliterChar = '/';
         public RelayCommand<string> SearchCommand { get; private set; }
         public RelayCommand NavigationHistoryBackCommand { get; private set; }
@@ -66,13 +68,22 @@ namespace Workshop.ViewModel
             this.KeyWord = "";
 
             this.PathList = new ObservableCollectionEx<string>();
+            this.IsShowDetail = false;
+            this.IsShowTree = true;
             InitData();
 
         }
 
         private void SettingsPageViewModel_OnSubmit(object sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            this.NavigationStack.Clear();
+            this.NavigationHistoryStack.Clear();
+            this.RootExplorerItems?.Clear();
+            this.PathList?.Clear();
+            this.CurrentFileInfos = null;
+            this.CurrentExplorerItem = null;
+            this.SelectedFileInfo = null;
+            this.InitData();
         }
 
         private void ToggleTreeAction()
@@ -87,6 +98,10 @@ namespace Workshop.ViewModel
 
         private void RefreshAction()
         {
+            this.RootExplorerItems?.Clear();
+            this.PathList?.Clear();
+            this.CurrentExplorerItem = null;
+            this.SelectedFileInfo = null;
             InitData();
         }
 
@@ -161,10 +176,11 @@ namespace Workshop.ViewModel
             {
                 return;
             };
+            this.Rootname = _qiniuManager.Bucket;
             var fgalleryList = await _qiniuManager.Search(_qiniuManager.Bucket, keyword);
 
             var folders = fgalleryList.Where(c => c.IsFolder).GroupBy(c => c.FileName).Select(c => c.Key).ToList();
-
+            folders.Add("");
             ExplorerItem root = null;
             foreach (var folder in folders)
             {
@@ -275,6 +291,7 @@ namespace Workshop.ViewModel
                     var deleteResult = await _qiniuManager.Delete(new List<Model.Qiniu.QiniuFile>() { e.OldItems[0] as Model.Qiniu.QiniuFile });
                     if (deleteResult)
                     {
+                        this.SelectedFileInfo = null;
                         await this.RefreshCurrentFileInfosAsync();
 
                     }
@@ -342,7 +359,38 @@ namespace Workshop.ViewModel
                 await UIHelper.ShowAsync("没有找到Bucket列表，请填写正确的AppKey和AppSecret");
                 return false;
             }
-            _qiniuManager.Bucket = bucketList.First();
+            else if (bucketList.Count == 1)
+            {
+                _qiniuManager.Bucket = bucketList.First();
+
+            }
+            else
+            {
+                ContentDialog contentDialog = null;
+                var bucketListPage = new BucketListPage(bucketList);
+                bucketListPage.OnSubmit += (object sender, EventArgs e) =>
+                {
+
+                    var currentBucket = (sender as BucketListPage).CurrentBucket;
+                    if (!string.IsNullOrEmpty(currentBucket))
+                    {
+                        _qiniuManager.Bucket = currentBucket;
+                        contentDialog.IsPrimaryButtonEnabled = true;
+
+                        //没有类似close()的方法可供调用
+                        //contentDialog.Close();
+                    }
+                };
+                contentDialog = new ContentDialog
+                {
+                    Title = "选择一个Bucket",
+                    Content = bucketListPage,
+                    IsPrimaryButtonEnabled = false,
+                    PrimaryButtonText = "继续"
+                };
+                contentDialog.XamlRoot = App.Window.Content.XamlRoot;
+                await contentDialog.ShowAsync();
+            }
             return true;
         }
 

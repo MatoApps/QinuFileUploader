@@ -12,12 +12,11 @@ namespace QinuFileUploader.Helper
 {
     public class UIHelper
     {
-        public static async Task<ContentDialogResult> ShowAsync(string messageBoxText)
+        public static async Task<ContentDialogResult> ShowAsync(string messageBoxText, string title=null)
         {
-
             ContentDialog subscribeDialog = new ContentDialog
             {
-                Title = "消息",
+                Title = string.IsNullOrEmpty(title) ? "消息" : title,
                 Content = messageBoxText,
                 CloseButtonText = "确定",
                 DefaultButton = ContentDialogButton.Primary
@@ -26,7 +25,20 @@ namespace QinuFileUploader.Helper
             ContentDialogResult result = await subscribeDialog.ShowAsync();
             return result;
         }
-    
+
+        public static async Task<ContentDialog> ShowContentAsync(UserControl content, string title=null)
+        {
+            ContentDialog subscribeDialog = new ContentDialog
+            {
+                Title = string.IsNullOrEmpty(title) ? "消息" : title,
+                Content = content,
+            };
+            subscribeDialog.XamlRoot = App.Window.Content.XamlRoot;
+            await subscribeDialog.ShowAsync();
+            return subscribeDialog;
+        }
+
+
         public static void InitFileOpenPicker(FileOpenPicker picker)
         {
             if (Window.Current == null)
