@@ -27,8 +27,7 @@ namespace Workshop.ViewModel
         private readonly IQiniuManager _qiniuManager;
         private readonly IMimeTypeManager _mimeTypeManager;
 
-        private string Rootname;
-        private const char SpliterChar = '/';
+        private string _rootname;
         public RelayCommand<string> SearchCommand { get; private set; }
         public RelayCommand NavigationHistoryBackCommand { get; private set; }
         public RelayCommand NavigationHistoryForwardCommand { get; private set; }
@@ -54,9 +53,9 @@ namespace Workshop.ViewModel
             this.NavigationHistoryForwardCommand = new RelayCommand(NavigationHistoryForward);
             this.NavigationBackCommand = new RelayCommand(NavigationBack);
 
-            this.SearchCommand = new RelayCommand<string>(SearchAction);
-            this.AddImageCommand = new RelayCommand(AddImageAction);
-            this.RemoveImageCommand = new RelayCommand<IFileInfo>(RemoveImageAction);
+            this.SearchCommand = new RelayCommand<string>(SearchAction, (s) => CanCurrentExplorerItemRelevantDo());
+            this.AddImageCommand = new RelayCommand(AddImageAction, () => CanCurrentExplorerItemRelevantDo());
+            this.RemoveImageCommand = new RelayCommand<IFileInfo>(RemoveImageAction, (f) => CanCurrentExplorerItemRelevantDo() && SelectedFileInfo != null);
 
             this.ToggleDetailCommand = new RelayCommand(ToggleDetailAction);
             this.ToggleTreeCommand = new RelayCommand(ToggleTreeAction);
@@ -67,11 +66,15 @@ namespace Workshop.ViewModel
             this.NavigationHistoryStack = new ObservableCollectionEx<ExplorerItem>();
             this.KeyWord = "";
 
-            this.PathList = new ObservableCollectionEx<string>();
             this.IsShowDetail = false;
             this.IsShowTree = true;
             InitData();
 
+        }
+
+        private bool CanCurrentExplorerItemRelevantDo()
+        {
+            return CurrentExplorerItem != null;
         }
 
         private void SettingsPageViewModel_OnSubmit(object sender, EventArgs e)
@@ -79,7 +82,6 @@ namespace Workshop.ViewModel
             this.NavigationStack.Clear();
             this.NavigationHistoryStack.Clear();
             this.RootExplorerItems?.Clear();
-            this.PathList?.Clear();
             this.CurrentFileInfos = null;
             this.CurrentExplorerItem = null;
             this.SelectedFileInfo = null;
@@ -99,7 +101,6 @@ namespace Workshop.ViewModel
         private void RefreshAction()
         {
             this.RootExplorerItems?.Clear();
-            this.PathList?.Clear();
             this.CurrentExplorerItem = null;
             this.SelectedFileInfo = null;
             InitData();
@@ -114,12 +115,13 @@ namespace Workshop.ViewModel
                     return;
                 }
 
-                this.PathList.Clear();
-                foreach (var path in CurrentExplorerItem.Path.Split(SpliterChar).ToList())
-                {
-                    this.PathList.Add(path);
-                }
                 await RefreshCurrentFileInfosAsync();
+
+                this.RemoveImageCommand.NotifyCanExecuteChanged();
+                this.AddImageCommand.NotifyCanExecuteChanged();
+                this.SearchCommand.NotifyCanExecuteChanged();
+
+                this.SelectedFileInfo = null;
             }
 
         }
@@ -127,11 +129,14 @@ namespace Workshop.ViewModel
         private async Task RefreshCurrentFileInfosAsync(string keyword = "")
         {
 
-
-            var targetPath = this.CurrentExplorerItem.Path + SpliterChar + keyword;
+            if (this.CurrentExplorerItem == null)
+            {
+                return;
+            }
+            var targetPath = this.CurrentExplorerItem.Path + ExplorerItem.SpliterChar + keyword;
             targetPath = EnsureOriginUrl(targetPath);
 
-            var targetDirectoryPath = Path.GetDirectoryName(targetPath + SpliterChar);
+            var targetDirectoryPath = Path.GetDirectoryName(targetPath + ExplorerItem.SpliterChar);
             if (targetDirectoryPath == null)
             {
                 targetDirectoryPath = string.Empty;
@@ -150,12 +155,12 @@ namespace Workshop.ViewModel
 
         private string EnsureOriginUrl(string targetPath)
         {
-            if (targetPath.StartsWith(Rootname))
+            if (targetPath.StartsWith(_rootname))
             {
-                targetPath = targetPath.Substring(Rootname.Length, targetPath.Length - Rootname.Length);
+                targetPath = targetPath.Substring(_rootname.Length, targetPath.Length - _rootname.Length);
             }
 
-            if (targetPath.StartsWith(SpliterChar))
+            if (targetPath.StartsWith(ExplorerItem.SpliterChar))
             {
                 targetPath = targetPath.Substring(1, targetPath.Length - 1);
             }
@@ -176,7 +181,7 @@ namespace Workshop.ViewModel
             {
                 return;
             };
-            this.Rootname = _qiniuManager.Bucket;
+            this._rootname = _qiniuManager.Bucket;
             var fgalleryList = await _qiniuManager.Search(_qiniuManager.Bucket, keyword);
 
             var folders = fgalleryList.Where(c => c.IsFolder).GroupBy(c => c.FileName).Select(c => c.Key).ToList();
@@ -184,12 +189,12 @@ namespace Workshop.ViewModel
             ExplorerItem root = null;
             foreach (var folder in folders)
             {
-                var trimdFolder = Rootname + SpliterChar + folder;
-                if (trimdFolder.EndsWith(SpliterChar))
+                var trimdFolder = _rootname + ExplorerItem.SpliterChar + folder;
+                if (trimdFolder.EndsWith(ExplorerItem.SpliterChar))
                 {
                     trimdFolder = trimdFolder.Substring(0, trimdFolder.Length - 1);
                 }
-                var pathArray = trimdFolder.Split(SpliterChar);
+                var pathArray = trimdFolder.Split(ExplorerItem.SpliterChar);
 
                 void b(ref ExplorerItem current, int index)
                 {
@@ -203,7 +208,7 @@ namespace Workshop.ViewModel
                     var next = current.Children.FirstOrDefault(c => c.Name == name);
                     if (next == null)
                     {
-                        var path = string.Join(SpliterChar, pathArray);
+                        var path = string.Join(ExplorerItem.SpliterChar, pathArray);
 
                         var currentExplorerItem = new ExplorerItem()
                         {
@@ -227,7 +232,7 @@ namespace Workshop.ViewModel
                     }
                     var children = new ObservableCollectionEx<ExplorerItem>();
                     children.Add(ex);
-                    var path = string.Join(SpliterChar, pathArray, 0, index + 1);
+                    var path = string.Join(ExplorerItem.SpliterChar, pathArray, 0, index + 1);
 
                     var e = new ExplorerItem()
                     {
@@ -283,7 +288,7 @@ namespace Workshop.ViewModel
                     }
                     else
                     {
-                        await UIHelper.ShowAsync("上传图片成功，但是回调失败了");
+                        await UIHelper.ShowAsync("上传过程中出现错误");
                         await this.RefreshCurrentFileInfosAsync();
                     }
                     break;
@@ -335,7 +340,7 @@ namespace Workshop.ViewModel
             var file = files[0];
 
             var basicProp = await file.GetBasicPropertiesAsync();
-            var filename = this.CurrentExplorerItem.Path + SpliterChar + file.Name;
+            var filename = this.CurrentExplorerItem.Path + ExplorerItem.SpliterChar + file.Name;
             var fileType = _mimeTypeManager.GetMimeType(file.FileType);
             var localfile = new LocalFile()
             {
@@ -444,7 +449,7 @@ namespace Workshop.ViewModel
         {
 
             this.NavigationStack.Clear();
-            var paths = folder.Path.Split(SpliterChar);
+            var paths = folder.Path.Split(ExplorerItem.SpliterChar);
 
 
             void a(IEnumerable<ExplorerItem> ex, int index)
@@ -534,7 +539,7 @@ namespace Workshop.ViewModel
             {
                 return false;
             }
-            //var paths = item.Path.Split(SpliterChar);
+            //var paths = item.Path.Split(ExplorerItem.SpliterChar);
 
             //ExplorerItem a(IEnumerable<ExplorerItem> ex, int index)
             //{
@@ -647,19 +652,6 @@ namespace Workshop.ViewModel
             }
         }
 
-        private ObservableCollectionEx<string> _pathList;
-
-        public ObservableCollectionEx<string> PathList
-        {
-            get { return _pathList; }
-            set
-            {
-                _pathList = value;
-                OnPropertyChanged(nameof(PathList));
-
-
-            }
-        }
 
 
 

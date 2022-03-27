@@ -11,6 +11,8 @@
             </ResourceDictionary.MergedDictionaries>
             <common:NullToVisibilityConverter x:Key="nullToVisibilityConverter" />
             <common:NullToVisibilityConverter x:Key="inverseNullToVisibilityConverter" NonNullValue="Collapsed" NullValue="Visible" />
+            <common:BoolToVisibilityConverter x:Key="falseToVisibilityConverter" />
+            <common:BoolToVisibilityConverter x:Key="trueToVisibilityConverter" NonNullValue="Collapsed" NullValue="Visible" />
 
             <!-- Other app resources here -->
             <SolidColorBrush x:Key="WindowCaptionForeground" Color="{ThemeResource TextFillColorPrimary}"></SolidColorBrush>
