@@ -56,7 +56,7 @@
                              VerticalAlignment="Center"
                              HorizontalAlignment="Stretch">
                     <Grid>
-                        <BreadcrumbBar VerticalAlignment="Center"  HorizontalAlignment="Stretch" ItemsSource="{Binding CurrentExplorerItem.PathStack}">
+                        <BreadcrumbBar VerticalAlignment="Center"  HorizontalAlignment="Stretch" ItemsSource="{Binding PathStack}">
                         </BreadcrumbBar>
                     </Grid>
 

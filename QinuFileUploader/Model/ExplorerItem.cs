@@ -16,17 +16,7 @@ namespace QinuFileUploader.Model
         public enum ExplorerItemType { Folder, File };
         public string Name { get; set; }
         public string Path { get; set; }
-
-
-        public List<string> PathStack
-        {
-            get
-            {
-                var result = Path.Split(SpliterChar).ToList();
-                return result;
-            }
-        }
-
+        public List<string> PathStack => Path.Split(SpliterChar).ToList();
 
         private bool _isCurrent;
 

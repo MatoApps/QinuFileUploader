@@ -90,7 +90,7 @@ namespace Workshop.Service.Manager
             }
 
             Config.DefaultRsHost = "rs.qiniu.com";
-           
+
             mac = new Mac(StorageAppKey, DefaultStorageAppSecret);
             config = new Config { Zone = Zone.ZONE_CN_East };
             if (zone != null)
@@ -168,7 +168,7 @@ namespace Workshop.Service.Manager
 
                     if (qiNiuFileInfoList.Count > 0)
                     {
-                        qiNiuFileInfoList = qiNiuFileInfoList.OrderByDescending(t => t.CreateDate).ToList();                    
+                        qiNiuFileInfoList = qiNiuFileInfoList.OrderByDescending(t => t.CreateDate).ToList();
                         FileInfos = qiNiuFileInfoList;
                     }
                     else
@@ -178,7 +178,7 @@ namespace Workshop.Service.Manager
                 }
                 else
                 {
-                    LogHelper.LogError("未能加载数据！");
+                    LogHelper.LogError("未能加载数据:" + listResult.Text);
                 }
                 IsBusy = false;
 
@@ -265,7 +265,7 @@ namespace Workshop.Service.Manager
 
             IsBusy = false;
         }
-   
+
 
         public async Task<bool> Delete(List<QiniuFile> list)
         {
@@ -300,7 +300,7 @@ namespace Workshop.Service.Manager
         }
 
 
-        public async Task<bool> EditDeleteAfterDays(List<QiniuFile> list, int deleteAfterDays=0)
+        public async Task<bool> EditDeleteAfterDays(List<QiniuFile> list, int deleteAfterDays = 0)
         {
             return await Task.Run(() =>
               {
@@ -324,7 +324,7 @@ namespace Workshop.Service.Manager
                   }
               });
         }
-        
+
         public async Task<bool> RefreshNetAddress(List<QiniuFile> list)
         {
             if (list.Count > 0)
@@ -380,7 +380,7 @@ namespace Workshop.Service.Manager
 
 
         }
-        
+
         private string GetPrivateUrl(string fileName)
         {
             if (CurrentDomain?.Result?.Count > 0)
@@ -406,7 +406,7 @@ namespace Workshop.Service.Manager
         }
 
 
-        public async Task<bool> Upload(string[] fileUploadFiles, string callbackUrl,string callbackBody, bool overlay = true)
+        public async Task<bool> Upload(string[] fileUploadFiles, string callbackUrl, string callbackBody, bool overlay = true)
         {
             return await Task.Run(() =>
             {
@@ -426,9 +426,9 @@ namespace Workshop.Service.Manager
                 {
                     var fileInfo = new System.IO.FileInfo(file);
 
-                    if (fileInfo.Length > 1024 * 1024 * 2)
+                    if (fileInfo.Length > 1024 * 1024 * 5)
                     {
-                        LogHelper.LogError("单个文件大小不得大于2M");
+                        LogHelper.LogError("单个文件大小不得大于5M");
                         return false;
                     }
                 }
@@ -480,7 +480,7 @@ namespace Workshop.Service.Manager
                     foreach (string file in fileUploadFiles)
                     {
                         var key = Path.GetFileName(file);
-                        var currentResult = UploadFile(file, key, callbackUrl,callbackBody);
+                        var currentResult = UploadFile(file, key, callbackUrl, callbackBody);
                         var currentDataResult = false;
                         if (currentResult.Errorno == CommonResultInfo.SUCCESS)
                         {
@@ -510,7 +510,7 @@ namespace Workshop.Service.Manager
             });
         }
 
-        public async Task<bool> UploadSingle(string fileUploadFile, string key, string callbackUrl,string callbackBody, bool overlay = true)
+        public async Task<bool> UploadSingle(string fileUploadFile, string key, string callbackUrl, string callbackBody, bool overlay = true)
         {
             return await Task.Run(async () =>
             {
@@ -551,7 +551,7 @@ namespace Workshop.Service.Manager
             });
         }
 
-        private async Task<ICommonResultInfo> UploadFileResumable(string file, string key, string callbackUrl,string callbackBody, bool overLay = false)
+        private async Task<ICommonResultInfo> UploadFileResumable(string file, string key, string callbackUrl, string callbackBody, bool overLay = false)
         {
             ICommonResultInfo commonResultInfo;
             var putPolicy = new PutPolicy();
@@ -594,7 +594,7 @@ namespace Workshop.Service.Manager
 
                     putPolicy.DeleteAfterDays = 0;
 
-       
+
 
                     putPolicy.CallbackUrl = callbackUrl;
                     putPolicy.CallbackBody = callbackUrl;
@@ -629,7 +629,7 @@ namespace Workshop.Service.Manager
             return commonResultInfo;
         }
 
-        private ICommonResultInfo UploadFile(string file, string key, string callbackUrl,string callbackBody, bool overlay = false)
+        private ICommonResultInfo UploadFile(string file, string key, string callbackUrl, string callbackBody, bool overlay = false)
         {
             ICommonResultInfo commonResultInfo;
             var putPolicy = new PutPolicy();
@@ -649,7 +649,7 @@ namespace Workshop.Service.Manager
 
                 putPolicy.DeleteAfterDays = 0;
 
-              
+
 
                 putPolicy.CallbackUrl = callbackUrl;
                 putPolicy.CallbackBody = callbackBody;
@@ -704,12 +704,6 @@ namespace Workshop.Service.Manager
         }
 
 
-        /// <summary>
-        /// 预览
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-
         public string GetPreviewAddress(List<QiniuFile> list)
         {
             var result = "";
@@ -723,11 +717,8 @@ namespace Workshop.Service.Manager
             }
             return result;
         }
-        /// <summary>
-        /// 重命名
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+
+
         public void Rename(List<QiniuFile> list, string txtRename)
         {
             if (list.Count > 0)

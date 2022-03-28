@@ -66,6 +66,7 @@ namespace Workshop.ViewModel
             this.NavigationHistoryStack = new ObservableCollectionEx<ExplorerItem>();
             this.KeyWord = "";
 
+            PathStack = new ObservableCollection<string>();
             this.IsShowDetail = false;
             this.IsShowTree = true;
             InitData();
@@ -110,9 +111,16 @@ namespace Workshop.ViewModel
         {
             if (e.PropertyName == nameof(CurrentExplorerItem))
             {
+                PathStack.Clear();
+
                 if (this.CurrentExplorerItem == null || string.IsNullOrEmpty(this.CurrentExplorerItem.Path))
                 {
                     return;
+                }
+
+                foreach (var item in CurrentExplorerItem.PathStack)
+                {
+                    PathStack.Add(item);
                 }
 
                 await RefreshCurrentFileInfosAsync();
@@ -653,6 +661,18 @@ namespace Workshop.ViewModel
         }
 
 
+        private ObservableCollection<string> _pathStack;
+
+        public ObservableCollection<string> PathStack
+        {
+            get { return _pathStack; }
+            set
+            {
+                _pathStack = value;
+                OnPropertyChanged(nameof(PathStack));
+
+            }
+        }
 
 
 
