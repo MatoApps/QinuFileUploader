@@ -280,6 +280,7 @@
                             <Grid Grid.Row="0">
                                 <CommandBar Background="Transparent" HorizontalAlignment="Left" IsOpen="False" DefaultLabelPosition="Right">
                                     <AppBarButton Icon="Add" Label="上传"  Command="{Binding AddImageCommand}"/>
+                                    <AppBarButton Icon="Add" Label="新建文件夹"  Command="{Binding AddFolderCommand}"/>
                                     <AppBarButton Icon="Delete" Label="删除"  Command="{ Binding RemoveImageCommand}" CommandParameter="{Binding SelectedFileInfo}" />
 
                                 </CommandBar>
@@ -305,7 +306,20 @@
 
                                 <GridView.ItemTemplate>
                                     <DataTemplate>
-                                        <Image Source="{Binding Path}" Width="90" Height="90" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Grid Width="100" Height="120">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition></RowDefinition>
+                                                <RowDefinition Height="Auto"></RowDefinition>
+                                            </Grid.RowDefinitions>
+                                            <Image Grid.Row="0" Visibility="{Binding IsFolder, Converter={StaticResource trueToVisibilityConverter}}" Width="90" Source="/Assets/folder.png"/>
+                                            <Image Grid.Row="0" Visibility="{Binding IsFolder, Converter={StaticResource falseToVisibilityConverter}}" Source="{Binding Path}" Width="90" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <TextBlock HorizontalAlignment="Center" Grid.Row="1" Text="{Binding FileName, Converter={StaticResource absoluteNameConverter}}"  Style="{ThemeResource CaptionTextBlockStyle}"></TextBlock>
+                                            <Grid Grid.Row="0" Grid.RowSpan="2" 
+                                                  Visibility="{Binding Converter={StaticResource isTypeToVisibilityConverter},ConverterParameter=QinuFileUploader.Model.LocalFile.LocalFile}"
+                                                  Background="{ThemeResource ControlSolidFillColorDefaultBrush}" Opacity="0.4">
+                                            </Grid>
+                                            <ProgressRing  Grid.Row="0" IsActive="{Binding Converter={StaticResource isTypeToBoolConverter},ConverterParameter=QinuFileUploader.Model.LocalFile.LocalFile}" />
+                                        </Grid>
                                     </DataTemplate>
                                 </GridView.ItemTemplate>
                             </GridView>

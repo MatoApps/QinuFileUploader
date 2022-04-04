@@ -19,6 +19,7 @@ using Workshop.Infrastructure.Helper;
 using Workshop.Service.Manager;
 using QinuFileUploader;
 using Microsoft.UI.Xaml.Controls;
+using Workshop.Model.Qiniu;
 
 namespace Workshop.ViewModel
 {
@@ -34,6 +35,7 @@ namespace Workshop.ViewModel
         public RelayCommand NavigationBackCommand { get; private set; }
         public RelayCommand RefreshCommand { get; private set; }
         public RelayCommand AddImageCommand { get; }
+        public RelayCommand AddFolderCommand { get; }
         public RelayCommand ToggleDetailCommand { get; }
         public RelayCommand ToggleTreeCommand { get; }
         public RelayCommand<IFileInfo> RemoveImageCommand { get; private set; }
@@ -55,6 +57,7 @@ namespace Workshop.ViewModel
 
             this.SearchCommand = new RelayCommand<string>(SearchAction, (s) => CanCurrentExplorerItemRelevantDo());
             this.AddImageCommand = new RelayCommand(AddImageAction, () => CanCurrentExplorerItemRelevantDo());
+            this.AddFolderCommand = new RelayCommand(AddFolderAction, () => CanCurrentExplorerItemRelevantDo());
             this.RemoveImageCommand = new RelayCommand<IFileInfo>(RemoveImageAction, (f) => CanCurrentExplorerItemRelevantDo() && SelectedFileInfo != null);
 
             this.ToggleDetailCommand = new RelayCommand(ToggleDetailAction);
@@ -71,6 +74,41 @@ namespace Workshop.ViewModel
             this.IsShowTree = true;
             InitData();
 
+        }
+
+        private async void AddFolderAction()
+        {
+            var folderName = "";
+            ContentDialog contentDialog = null;
+            var createFolderPagePage = new CreateFolderPage();
+            createFolderPagePage.OnSubmit += (object sender, EventArgs e) =>
+            {
+
+                var currentName = (sender as CreateFolderPage).CurrentName;
+                if (!string.IsNullOrEmpty(currentName))
+                {
+                    folderName = currentName;
+                    //没有类似close()的方法可供调用
+                    //contentDialog.Close();
+                }
+            };
+            contentDialog = new ContentDialog
+            {
+                Title = "请键入文件夹名称",
+                Content = createFolderPagePage,
+                PrimaryButtonText = "继续"
+            };
+            contentDialog.XamlRoot = App.Window.Content.XamlRoot;
+            await contentDialog.ShowAsync();
+            var filename = this.CurrentExplorerItem.Path + ExplorerItem.SpliterChar + folderName + ExplorerItem.SpliterChar+"seed";
+
+            var localfile = new LocalFile()
+            {
+                FileName = filename,
+                FileSize = QiniuHelper.GetFileSize(0),
+            };
+            localfile.SetFolderType();
+            this.CurrentFileInfos.Insert(0, localfile);
         }
 
         private bool CanCurrentExplorerItemRelevantDo()
@@ -127,6 +165,7 @@ namespace Workshop.ViewModel
 
                 this.RemoveImageCommand.NotifyCanExecuteChanged();
                 this.AddImageCommand.NotifyCanExecuteChanged();
+                this.AddFolderCommand.NotifyCanExecuteChanged();
                 this.SearchCommand.NotifyCanExecuteChanged();
 
                 this.SelectedFileInfo = null;
@@ -151,11 +190,23 @@ namespace Workshop.ViewModel
             }
 
             var fileInfos = await _qiniuManager.Search(_qiniuManager.Bucket, targetPath);
-            var currentFileInfos = new ObservableCollectionEx<IFileInfo>(fileInfos.Where(c => !c.IsFolder).Where(c =>
+            var currentFileInfos = new ObservableCollectionEx<IFileInfo>(fileInfos.Where(c =>
             {
-                var result = Path.GetDirectoryName(c.FileName) == targetDirectoryPath;
+                var result = false;
+                if (c.IsFolder)
+                {
+                    if (c.FileName.EndsWith('/') && c.FileName.Length > 1)
+                    {
+                        var fileName = c.FileName.Substring(0, c.FileName.Length - 1);
+                        result = Path.GetDirectoryName(fileName) == targetDirectoryPath;
+                    }
+                }
+                else
+                {
+                    result = Path.GetDirectoryName(c.FileName) == targetDirectoryPath;
+                }
                 return result;
-            }));
+            }).OrderByDescending(c => c.IsFolder));
             currentFileInfos.CollectionChanged += FileInfos_CollectionChangedAsync;
             this.CurrentFileInfos = currentFileInfos;
 
@@ -282,6 +333,13 @@ namespace Workshop.ViewModel
             switch (e.Action)
             {
                 case NotifyCollectionChangedAction.Add:
+                    var currentItem = e.NewItems[0] as IFileInfo;
+
+                    if (e.NewItems[0] is not LocalFile)
+                    {
+                        await UIHelper.ShowAsync("上传过程中出现错误");
+                        return;
+                    }
                     var item = e.NewItems[0] as IFileInfo;
                     var callbackBody = ConfigureProvider.SettingInfo.CallbackBody;
                     var callbackUrl = ConfigureProvider.SettingInfo.CallbackUrl;
@@ -357,8 +415,12 @@ namespace Workshop.ViewModel
                 FileSize = QiniuHelper.GetFileSize((long)basicProp.Size),
                 CreateDate = basicProp.ItemDate.ToString("yyyy/MM/dd HH:mm:ss"),
                 Path = file.Path,
-            };
 
+            };
+            if (string.IsNullOrEmpty(localfile.FileType))
+            {
+                localfile.SetFolderType();
+            }
             this.CurrentFileInfos.Insert(0, localfile);
         }
 

@@ -15,5 +15,9 @@ namespace QinuFileUploader.Model
         public string CreateDate { get; set; }
 
         public string Path { get; set; }
+
+        public bool IsFolder { get; }
+
+        void SetFolderType();
     }
 }

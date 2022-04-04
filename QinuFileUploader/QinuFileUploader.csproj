@@ -23,9 +23,14 @@
     <PackageCertificateKeyFile>QinuFileUploader_TemporaryKey.pfx</PackageCertificateKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Content Remove="Assets\README.txt" />
+  </ItemGroup>
+  <ItemGroup>
     <None Remove="Assets\folder.png" />
     <None Remove="Assets\imageLoad.png" />
+    <None Remove="Assets\README.txt" />
     <None Remove="View\BucketListPage.xaml" />
+    <None Remove="View\CreateFolderPage.xaml" />
     <None Remove="View\SettingsPage.xaml" />
   </ItemGroup>
 
@@ -37,6 +42,10 @@
     <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\README.txt" />
   </ItemGroup>
 
   <ItemGroup>
@@ -71,6 +80,9 @@
     <Folder Include="Assets\Fonts\" />
   </ItemGroup>
   <ItemGroup>
+    <Page Update="View\CreateFolderPage.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+    </Page>
     <Page Update="View\BucketListPage.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
     </Page>

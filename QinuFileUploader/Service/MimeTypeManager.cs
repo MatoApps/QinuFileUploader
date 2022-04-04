@@ -703,7 +703,6 @@ namespace QinuFileUploader.Service
         public string GetMimeType(string str)
         {
             string mimeType;
-            var extension = Path.GetExtension(str);
             var result = this.mappings.TryGetValue(str, out mimeType);
             if (result)
             {

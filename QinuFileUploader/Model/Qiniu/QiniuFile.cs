@@ -13,6 +13,10 @@ namespace Workshop.Model.Qiniu
         public string FileName { get; set; }
         public string FileType { get; set; }
         public string StorageType { get; set; }
+        public void SetFolderType()
+        {
+            this.FileType = qiniuFolderType;
+        }
 
         public string FileSize { get; set; }
 

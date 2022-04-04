@@ -13,6 +13,12 @@
             <common:NullToVisibilityConverter x:Key="inverseNullToVisibilityConverter" NonNullValue="Collapsed" NullValue="Visible" />
             <common:BoolToVisibilityConverter x:Key="falseToVisibilityConverter" />
             <common:BoolToVisibilityConverter x:Key="trueToVisibilityConverter" NonNullValue="Collapsed" NullValue="Visible" />
+            <common:AbsoluteNameConverter x:Key="absoluteNameConverter"  />
+            <common:IsTypeToBoolConverter x:Key="isTypeToBoolConverter"  />
+
+            <common:IsTypeToVisibilityConverter x:Key="isTypeToVisibilityConverter" />
+            <common:IsTypeToVisibilityConverter x:Key="isNotTypeVisibilityConverter" NonNullValue="Collapsed" NullValue="Visible" />
+
 
             <!-- Other app resources here -->
             <SolidColorBrush x:Key="WindowCaptionForeground" Color="{ThemeResource TextFillColorPrimary}"></SolidColorBrush>
