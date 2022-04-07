@@ -1,11 +1,11 @@
-﻿using System;
+﻿using QinuFileUploader.Helper;
+using QinuFileUploader.Model;
+using QinuFileUploader.Model.Qiniu;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Workshop.Model;
-using Workshop.Model.Qiniu;
-using Workshop.Service;
 
 namespace QinuFileUploader.Common
 {

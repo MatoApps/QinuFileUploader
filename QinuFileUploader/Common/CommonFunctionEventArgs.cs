@@ -1,7 +1,6 @@
-﻿
-using System;
+﻿using System;
 
-namespace Workshop.Infrastructure.Common
+namespace QinuFileUploader.Common
 {
     public class CommonFunctionEventArgs : EventArgs
     {

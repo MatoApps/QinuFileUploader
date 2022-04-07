@@ -14,14 +14,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 using QinuFileUploader.Service;
-using Workshop.Infrastructure.Common;
-using Workshop.Infrastructure.Helper;
-using Workshop.Service.Manager;
 using QinuFileUploader;
 using Microsoft.UI.Xaml.Controls;
-using Workshop.Model.Qiniu;
 
-namespace Workshop.ViewModel
+namespace QinuFileUploader.ViewModel
 {
     public class MenuPageViewModel : ObservableObject
     {
@@ -42,36 +38,36 @@ namespace Workshop.ViewModel
 
         public MenuPageViewModel(IQiniuManager qiniuManager, IMimeTypeManager mimeTypeManager, SettingsPageViewModel settingsPageViewModel)
         {
-            this._qiniuManager = qiniuManager;
+            _qiniuManager = qiniuManager;
             _mimeTypeManager = mimeTypeManager;
 
             settingsPageViewModel.OnSubmit += SettingsPageViewModel_OnSubmit;
 
-            this.PropertyChanged += MenuPageViewModel_PropertyChanged;
+            PropertyChanged += MenuPageViewModel_PropertyChanged;
 
             //init commands
-            this.RefreshCommand = new RelayCommand(RefreshAction);
-            this.NavigationHistoryBackCommand = new RelayCommand(NavigationHistoryBack);
-            this.NavigationHistoryForwardCommand = new RelayCommand(NavigationHistoryForward);
-            this.NavigationBackCommand = new RelayCommand(NavigationBack);
+            RefreshCommand = new RelayCommand(RefreshAction);
+            NavigationHistoryBackCommand = new RelayCommand(NavigationHistoryBack);
+            NavigationHistoryForwardCommand = new RelayCommand(NavigationHistoryForward);
+            NavigationBackCommand = new RelayCommand(NavigationBack);
 
-            this.SearchCommand = new RelayCommand<string>(SearchAction, (s) => CanCurrentExplorerItemRelevantDo());
-            this.AddImageCommand = new RelayCommand(AddImageAction, () => CanCurrentExplorerItemRelevantDo());
-            this.AddFolderCommand = new RelayCommand(AddFolderAction, () => CanCurrentExplorerItemRelevantDo());
-            this.RemoveImageCommand = new RelayCommand<IFileInfo>(RemoveImageAction, (f) => CanCurrentExplorerItemRelevantDo() && SelectedFileInfo != null);
+            SearchCommand = new RelayCommand<string>(SearchAction, (s) => CanCurrentExplorerItemRelevantDo());
+            AddImageCommand = new RelayCommand(AddImageAction, () => CanCurrentExplorerItemRelevantDo());
+            AddFolderCommand = new RelayCommand(AddFolderAction, () => CanCurrentExplorerItemRelevantDo());
+            RemoveImageCommand = new RelayCommand<IFileInfo>(RemoveImageAction, (f) => CanCurrentExplorerItemRelevantDo() && SelectedFileInfo != null);
 
-            this.ToggleDetailCommand = new RelayCommand(ToggleDetailAction);
-            this.ToggleTreeCommand = new RelayCommand(ToggleTreeAction);
+            ToggleDetailCommand = new RelayCommand(ToggleDetailAction);
+            ToggleTreeCommand = new RelayCommand(ToggleTreeAction);
 
 
             //init data
-            this.NavigationStack = new ObservableCollectionEx<ExplorerItem>();
-            this.NavigationHistoryStack = new ObservableCollectionEx<ExplorerItem>();
-            this.KeyWord = "";
+            NavigationStack = new ObservableCollectionEx<ExplorerItem>();
+            NavigationHistoryStack = new ObservableCollectionEx<ExplorerItem>();
+            KeyWord = "";
 
             PathStack = new ObservableCollection<string>();
-            this.IsShowDetail = false;
-            this.IsShowTree = true;
+            IsShowDetail = false;
+            IsShowTree = true;
             InitData();
 
         }
@@ -81,7 +77,7 @@ namespace Workshop.ViewModel
             var folderName = "";
             ContentDialog contentDialog = null;
             var createFolderPagePage = new CreateFolderPage();
-            createFolderPagePage.OnSubmit += (object sender, EventArgs e) =>
+            createFolderPagePage.OnSubmit += (sender, e) =>
             {
 
                 var currentName = (sender as CreateFolderPage).CurrentName;
@@ -100,15 +96,20 @@ namespace Workshop.ViewModel
             };
             contentDialog.XamlRoot = App.Window.Content.XamlRoot;
             await contentDialog.ShowAsync();
-            var filename = this.CurrentExplorerItem.Path + ExplorerItem.SpliterChar + folderName + ExplorerItem.SpliterChar+"seed";
+            var file = "README.txt";
+            var filename = CurrentExplorerItem.Path + ExplorerItem.SpliterChar + folderName + ExplorerItem.SpliterChar + file;
+            var fileType = _mimeTypeManager.GetMimeType(file);
 
             var localfile = new LocalFile()
             {
                 FileName = filename,
                 FileSize = QiniuHelper.GetFileSize(0),
+                Path = file,
+                FileType = fileType,
+                Type = FileInfoType.File,
             };
             localfile.SetFolderType();
-            this.CurrentFileInfos.Insert(0, localfile);
+            CurrentFileInfos.Insert(0, localfile);
         }
 
         private bool CanCurrentExplorerItemRelevantDo()
@@ -118,30 +119,30 @@ namespace Workshop.ViewModel
 
         private void SettingsPageViewModel_OnSubmit(object sender, EventArgs e)
         {
-            this.NavigationStack.Clear();
-            this.NavigationHistoryStack.Clear();
-            this.RootExplorerItems?.Clear();
-            this.CurrentFileInfos = null;
-            this.CurrentExplorerItem = null;
-            this.SelectedFileInfo = null;
-            this.InitData();
+            NavigationStack.Clear();
+            NavigationHistoryStack.Clear();
+            RootExplorerItems?.Clear();
+            CurrentFileInfos = null;
+            CurrentExplorerItem = null;
+            SelectedFileInfo = null;
+            InitData();
         }
 
         private void ToggleTreeAction()
         {
-            this.IsShowTree = !this.IsShowTree;
+            IsShowTree = !IsShowTree;
         }
 
         private void ToggleDetailAction()
         {
-            this.IsShowDetail = !this.IsShowDetail;
+            IsShowDetail = !IsShowDetail;
         }
 
         private void RefreshAction()
         {
-            this.RootExplorerItems?.Clear();
-            this.CurrentExplorerItem = null;
-            this.SelectedFileInfo = null;
+            RootExplorerItems?.Clear();
+            CurrentExplorerItem = null;
+            SelectedFileInfo = null;
             InitData();
         }
 
@@ -151,7 +152,7 @@ namespace Workshop.ViewModel
             {
                 PathStack.Clear();
 
-                if (this.CurrentExplorerItem == null || string.IsNullOrEmpty(this.CurrentExplorerItem.Path))
+                if (CurrentExplorerItem == null || string.IsNullOrEmpty(CurrentExplorerItem.Path))
                 {
                     return;
                 }
@@ -163,12 +164,12 @@ namespace Workshop.ViewModel
 
                 await RefreshCurrentFileInfosAsync();
 
-                this.RemoveImageCommand.NotifyCanExecuteChanged();
-                this.AddImageCommand.NotifyCanExecuteChanged();
-                this.AddFolderCommand.NotifyCanExecuteChanged();
-                this.SearchCommand.NotifyCanExecuteChanged();
+                RemoveImageCommand.NotifyCanExecuteChanged();
+                AddImageCommand.NotifyCanExecuteChanged();
+                AddFolderCommand.NotifyCanExecuteChanged();
+                SearchCommand.NotifyCanExecuteChanged();
 
-                this.SelectedFileInfo = null;
+                SelectedFileInfo = null;
             }
 
         }
@@ -176,11 +177,11 @@ namespace Workshop.ViewModel
         private async Task RefreshCurrentFileInfosAsync(string keyword = "")
         {
 
-            if (this.CurrentExplorerItem == null)
+            if (CurrentExplorerItem == null)
             {
                 return;
             }
-            var targetPath = this.CurrentExplorerItem.Path + ExplorerItem.SpliterChar + keyword;
+            var targetPath = CurrentExplorerItem.Path + ExplorerItem.SpliterChar + keyword;
             targetPath = EnsureOriginUrl(targetPath);
 
             var targetDirectoryPath = Path.GetDirectoryName(targetPath + ExplorerItem.SpliterChar);
@@ -193,7 +194,7 @@ namespace Workshop.ViewModel
             var currentFileInfos = new ObservableCollectionEx<IFileInfo>(fileInfos.Where(c =>
             {
                 var result = false;
-                if (c.IsFolder)
+                if (c.Type == FileInfoType.Folder)
                 {
                     if (c.FileName.EndsWith('/') && c.FileName.Length > 1)
                     {
@@ -206,9 +207,9 @@ namespace Workshop.ViewModel
                     result = Path.GetDirectoryName(c.FileName) == targetDirectoryPath;
                 }
                 return result;
-            }).OrderByDescending(c => c.IsFolder));
+            }).OrderBy(c => c.Type));
             currentFileInfos.CollectionChanged += FileInfos_CollectionChangedAsync;
-            this.CurrentFileInfos = currentFileInfos;
+            CurrentFileInfos = currentFileInfos;
 
         }
 
@@ -229,7 +230,7 @@ namespace Workshop.ViewModel
 
         private async void SearchAction(string keyword)
         {
-            await this.RefreshCurrentFileInfosAsync(keyword);
+            await RefreshCurrentFileInfosAsync(keyword);
         }
 
 
@@ -240,11 +241,31 @@ namespace Workshop.ViewModel
             {
                 return;
             };
-            this._rootname = _qiniuManager.Bucket;
+            _rootname = _qiniuManager.Bucket;
             var fgalleryList = await _qiniuManager.Search(_qiniuManager.Bucket, keyword);
 
-            var folders = fgalleryList.Where(c => c.IsFolder).GroupBy(c => c.FileName).Select(c => c.Key).ToList();
+            var folders = fgalleryList.Where(c => c.Type == FileInfoType.Folder).GroupBy(c => c.FileName).Select(c => c.Key).ToList();
             folders.Add("");
+
+            var vfolders = fgalleryList
+                .Where(c => c.Type == FileInfoType.File)
+                .Select(c =>
+                {
+                    var fileName = Path.GetFileName(c.FileName);
+                    var folderName = c.FileName.Substring(0, c.FileName.Length - fileName.Length);
+                    return folderName;
+                })
+                .Distinct()
+                .ToList();
+
+            foreach (var vfolder in vfolders)
+            {
+                if (!folders.Contains(vfolder))
+                {
+                    folders.Add(vfolder);
+                }
+            }
+
             ExplorerItem root = null;
             foreach (var folder in folders)
             {
@@ -318,12 +339,12 @@ namespace Workshop.ViewModel
                 }
             }
 
-            this.RootExplorerItems = new ObservableCollectionEx<ExplorerItem>() { root };
+            RootExplorerItems = new ObservableCollectionEx<ExplorerItem>() { root };
 
-            this.NavigationHistoryStack.Add(root);
-            this.NavigationStack.Add(root);
+            NavigationHistoryStack.Add(root);
+            NavigationStack.Add(root);
 
-            this.CurrentExplorerItem = RootExplorerItems.FirstOrDefault();
+            CurrentExplorerItem = RootExplorerItems.FirstOrDefault();
         }
 
         private async void FileInfos_CollectionChangedAsync(object sender, NotifyCollectionChangedEventArgs e)
@@ -345,25 +366,27 @@ namespace Workshop.ViewModel
                     var callbackUrl = ConfigureProvider.SettingInfo.CallbackUrl;
 
                     var filename = EnsureOriginUrl(item.FileName);
+                    bool uploadResult;
 
-                    var uploadResult = await _qiniuManager.UploadSingle(item.Path, filename, callbackUrl, callbackBody);
+                    uploadResult = await _qiniuManager.UploadSingle(item.Path, filename, callbackUrl, callbackBody);
+
                     if (uploadResult)
                     {
-                        await this.RefreshCurrentFileInfosAsync();
+                        await RefreshCurrentFileInfosAsync();
 
                     }
                     else
                     {
                         await UIHelper.ShowAsync("上传过程中出现错误");
-                        await this.RefreshCurrentFileInfosAsync();
+                        await RefreshCurrentFileInfosAsync();
                     }
                     break;
                 case NotifyCollectionChangedAction.Remove:
                     var deleteResult = await _qiniuManager.Delete(new List<Model.Qiniu.QiniuFile>() { e.OldItems[0] as Model.Qiniu.QiniuFile });
                     if (deleteResult)
                     {
-                        this.SelectedFileInfo = null;
-                        await this.RefreshCurrentFileInfosAsync();
+                        SelectedFileInfo = null;
+                        await RefreshCurrentFileInfosAsync();
 
                     }
                     break;
@@ -380,7 +403,7 @@ namespace Workshop.ViewModel
 
         private void RemoveImageAction(IFileInfo obj)
         {
-            var current = this.CurrentFileInfos.First(c => c.FileName == obj.FileName);
+            var current = CurrentFileInfos.First(c => c.FileName == obj.FileName);
             if (current != null)
             {
                 CurrentFileInfos.RemoveAt(CurrentFileInfos.IndexOf(current));
@@ -406,7 +429,7 @@ namespace Workshop.ViewModel
             var file = files[0];
 
             var basicProp = await file.GetBasicPropertiesAsync();
-            var filename = this.CurrentExplorerItem.Path + ExplorerItem.SpliterChar + file.Name;
+            var filename = CurrentExplorerItem.Path + ExplorerItem.SpliterChar + file.Name;
             var fileType = _mimeTypeManager.GetMimeType(file.FileType);
             var localfile = new LocalFile()
             {
@@ -421,7 +444,7 @@ namespace Workshop.ViewModel
             {
                 localfile.SetFolderType();
             }
-            this.CurrentFileInfos.Insert(0, localfile);
+            CurrentFileInfos.Insert(0, localfile);
         }
 
 
@@ -443,7 +466,7 @@ namespace Workshop.ViewModel
             {
                 ContentDialog contentDialog = null;
                 var bucketListPage = new BucketListPage(bucketList);
-                bucketListPage.OnSubmit += (object sender, EventArgs e) =>
+                bucketListPage.OnSubmit += (sender, e) =>
                 {
 
                     var currentBucket = (sender as BucketListPage).CurrentBucket;
@@ -474,26 +497,26 @@ namespace Workshop.ViewModel
 
         private void NavigationBack()
         {
-            if (this.NavigationStack.Count == 1)
+            if (NavigationStack.Count == 1)
             {
                 return;
             }
-            this.NavigationStack.Pop();
-            var lastItem = this.NavigationStack.LastOrDefault();
+            NavigationStack.Pop();
+            var lastItem = NavigationStack.LastOrDefault();
             if (lastItem == null)
             {
                 return;
             }
-            if (this.ToFolder(lastItem))
+            if (ToFolder(lastItem))
             {
 
-                this.NavigationHistoryStack.ForEach((element) =>
+                NavigationHistoryStack.ForEach((element) =>
                 {
                     element.IsCurrent = false;
                 });
                 lastItem.IsCurrent = true;
 
-                this.PushNavigationHistoryStack(lastItem);
+                PushNavigationHistoryStack(lastItem);
             }
         }
         private void PushNavigationHistoryStack(ExplorerItem item)
@@ -508,17 +531,17 @@ namespace Workshop.ViewModel
                 IsExpanded = false
             };
 
-            if (this.NavigationHistoryStack.Count > 10)
+            if (NavigationHistoryStack.Count > 10)
             {
-                this.NavigationHistoryStack.Pop();
+                NavigationHistoryStack.Pop();
             }
-            this.NavigationHistoryStack.Unshift(newItem);
+            NavigationHistoryStack.Unshift(newItem);
         }
 
         private void DealWithNavigationStack(ExplorerItem folder)
         {
 
-            this.NavigationStack.Clear();
+            NavigationStack.Clear();
             var paths = folder.Path.Split(ExplorerItem.SpliterChar);
 
 
@@ -536,45 +559,45 @@ namespace Workshop.ViewModel
                     return;
 
                 }
-                this.NavigationStack.Push(currentExplorerItem);
+                NavigationStack.Push(currentExplorerItem);
                 a(currentExplorerItem.Children, index + 1);
             }
-            a(this.RootExplorerItems, 0);
+            a(RootExplorerItems, 0);
         }
 
         public void NavigationTo(ExplorerItem folder)
         {
-            this.DealWithNavigationStack(folder);
-            if (this.ToFolder(folder))
+            DealWithNavigationStack(folder);
+            if (ToFolder(folder))
             {
-                this.NavigationHistoryStack.ForEach((element) =>
+                NavigationHistoryStack.ForEach((element) =>
                 {
                     element.IsCurrent = false;
                 });
                 folder.IsCurrent = true;
-                this.PushNavigationHistoryStack(folder);
+                PushNavigationHistoryStack(folder);
             }
         }
 
         private void NavigationHistoryBack()
         {
-            var currentIndex = (this.NavigationHistoryStack).IndexOf(
+            var currentIndex = NavigationHistoryStack.IndexOf(
               (c) => c.IsCurrent
             );
-            if (currentIndex < this.NavigationHistoryStack.Count - 1)
+            if (currentIndex < NavigationHistoryStack.Count - 1)
             {
                 var forwardIndex = currentIndex + 1;
 
-                var folder = this.NavigationHistoryStack[forwardIndex];
-                this.DealWithNavigationStack(folder);
+                var folder = NavigationHistoryStack[forwardIndex];
+                DealWithNavigationStack(folder);
 
-                if (this.ToFolder(folder))
+                if (ToFolder(folder))
                 {
-                    this.NavigationHistoryStack.ForEach((element) =>
+                    NavigationHistoryStack.ForEach((element) =>
                     {
                         element.IsCurrent = false;
                     });
-                    this.NavigationHistoryStack[forwardIndex].IsCurrent = true;
+                    NavigationHistoryStack[forwardIndex].IsCurrent = true;
                 }
             }
         }
@@ -582,30 +605,30 @@ namespace Workshop.ViewModel
         private void NavigationHistoryForward()
         {
 
-            var currentIndex = this.NavigationHistoryStack.IndexOf(
+            var currentIndex = NavigationHistoryStack.IndexOf(
               (c) => c.IsCurrent
             );
             if (currentIndex > 0)
             {
                 var forwardIndex = currentIndex - 1;
 
-                var folder = this.NavigationHistoryStack[forwardIndex];
-                this.DealWithNavigationStack(folder);
+                var folder = NavigationHistoryStack[forwardIndex];
+                DealWithNavigationStack(folder);
 
-                if (this.ToFolder(folder))
+                if (ToFolder(folder))
                 {
-                    this.NavigationHistoryStack.ForEach((element) =>
+                    NavigationHistoryStack.ForEach((element) =>
                     {
                         element.IsCurrent = false;
                     });
-                    this.NavigationHistoryStack[forwardIndex].IsCurrent = true;
+                    NavigationHistoryStack[forwardIndex].IsCurrent = true;
                 }
             }
         }
 
         private bool ToFolder(ExplorerItem item)
         {
-            if (item == null || item.Path == this.CurrentExplorerItem.Path)
+            if (item == null || item.Path == CurrentExplorerItem.Path)
             {
                 return false;
             }
@@ -628,14 +651,14 @@ namespace Workshop.ViewModel
             //}
             //var currentExplorerItem = a(this.RootExplorerItems, 0);
 
-            var currentExplorerItem = this.NavigationStack.FirstOrDefault(c => c.Path == item.Path);
+            var currentExplorerItem = NavigationStack.FirstOrDefault(c => c.Path == item.Path);
 
             if (currentExplorerItem == null)
             {
                 return false;
             }
 
-            this.CurrentExplorerItem = currentExplorerItem;
+            CurrentExplorerItem = currentExplorerItem;
             return true;
         }
 

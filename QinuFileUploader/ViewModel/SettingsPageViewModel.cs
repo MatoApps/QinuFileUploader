@@ -3,24 +3,22 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
-using Workshop.Service.Manager;
-using Workshop.Model;
-using Workshop.Service;
-using Workshop.Infrastructure;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QinuFileUploader.Common;
-using Workshop.Model.Qiniu;
+using QinuFileUploader.Helper;
+using QinuFileUploader.Model.Qiniu;
+using QinuFileUploader.Model;
 
-namespace Workshop.ViewModel
+namespace QinuFileUploader.ViewModel
 {
     public class SettingsPageViewModel : ObservableObject
     {
         public event EventHandler<EventArgs> OnSubmit;
         public SettingsPageViewModel()
         {
-            this.SubmitCommand = new RelayCommand(SubmitAction, CanSubmit);
-            this.PropertyChanged += SettingPageViewModel_PropertyChanged;
+            SubmitCommand = new RelayCommand(SubmitAction, CanSubmit);
+            PropertyChanged += SettingPageViewModel_PropertyChanged;
             SettingInfo = new SettingInfo();
             SettingInfo.StorageAppSecret = ConfigureProvider.SettingInfo.StorageAppSecret;
             SettingInfo.StorageAppKey = ConfigureProvider.SettingInfo.StorageAppKey;
@@ -28,8 +26,8 @@ namespace Workshop.ViewModel
             SettingInfo.CallbackBody = ConfigureProvider.SettingInfo.CallbackBody;
             SettingInfo.PropertyChanged += SettingInfo_PropertyChanged;
 
-            this.BucketRegionSource = QiniuRegion.GetRegionList().ToList();
-            SettingInfo.StorageRegion = this.BucketRegionSource.First(c => c.Title == ConfigureProvider.SettingInfo.StorageRegion.Title);
+            BucketRegionSource = QiniuRegion.GetRegionList().ToList();
+            SettingInfo.StorageRegion = BucketRegionSource.First(c => c.Title == ConfigureProvider.SettingInfo.StorageRegion.Title);
 
         }
 
@@ -73,13 +71,13 @@ namespace Workshop.ViewModel
             LocalDataHelper.SaveObjectLocal(SettingInfo);
             HasChanged = false;
 
-            this.OnSubmit?.Invoke(this, new EventArgs());
+            OnSubmit?.Invoke(this, new EventArgs());
 
         }
 
         private bool CanSubmit()
         {
-            return this.SettingInfo != null && HasChanged;
+            return SettingInfo != null && HasChanged;
         }
 
         private SettingInfo _settingInfo;

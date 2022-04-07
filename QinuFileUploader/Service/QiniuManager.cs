@@ -5,21 +5,20 @@ using Qiniu.Storage;
 using Qiniu.Util;
 using QinuFileUploader.Common;
 using QinuFileUploader.Helper;
+using QinuFileUploader.Model;
+using QinuFileUploader.Model.Qiniu;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using Workshop.Infrastructure;
-using Workshop.Infrastructure.Common;
-using Workshop.Infrastructure.Helper;
-using Workshop.Model.Qiniu;
 
-namespace Workshop.Service.Manager
+namespace QinuFileUploader.Service
 {
     public class QiniuManager : IQiniuManager
     {
@@ -101,7 +100,7 @@ namespace Workshop.Service.Manager
 
 
 
-            this.BucketList.Clear();
+            BucketList.Clear();
             IsBusy = true;
 
             return await Task.Run(() =>
@@ -110,7 +109,7 @@ namespace Workshop.Service.Manager
                 if (bucketsResult.Code == 200)
                 {
                     List<string> buckets = bucketsResult.Result;
-                    this.BucketList = buckets;
+                    BucketList = buckets;
                     IsBusy = false;
                 }
                 else
@@ -119,7 +118,7 @@ namespace Workshop.Service.Manager
                     IsBusy = false;
                 }
                 Thread.Sleep(10);
-                return this.BucketList;
+                return BucketList;
             });
         }
 
@@ -160,7 +159,8 @@ namespace Workshop.Service.Manager
                             StorageType = QiniuHelper.GetStorageType(item.FileType),
                             FileSize = QiniuHelper.GetFileSize(item.Fsize),
                             EndUser = item.EndUser,
-                            CreateDate = QiniuHelper.GetDataTime(item.PutTime)
+                            CreateDate = QiniuHelper.GetDataTime(item.PutTime),
+                            Type = item.MimeType == QiniuFile.QiniuFolderType ? FileInfoType.Folder : FileInfoType.File
                         };
                         qiNiuFileInfoList.Add(f);
 
@@ -551,6 +551,7 @@ namespace Workshop.Service.Manager
             });
         }
 
+
         private async Task<ICommonResultInfo> UploadFileResumable(string file, string key, string callbackUrl, string callbackBody, bool overLay = false)
         {
             ICommonResultInfo commonResultInfo;
@@ -578,7 +579,20 @@ namespace Workshop.Service.Manager
                 }
                 else
                 {
-                    fs = File.OpenRead(file);
+                    if (File.Exists(file))
+                    {
+                        fs = File.OpenRead(file);
+
+                    }
+                    else
+                    {
+                        fs = Assembly.GetExecutingAssembly().GetManifestResourceStream("QinuFileUploader.Assets.README.txt");
+                    }
+                }
+                if (fs == null)
+                {
+                    commonResultInfo = new CommonResultInfo(string.Format("key:上传失败，找不到文件"), CommonResultInfo.ERROR);
+                    return commonResultInfo;
                 }
                 using (fs)
                 {

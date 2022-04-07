@@ -4,9 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Workshop.Model;
 
-namespace Workshop.Infrastructure.Helper
+namespace QinuFileUploader.Helper
 {
     public class CommonHelper
     {

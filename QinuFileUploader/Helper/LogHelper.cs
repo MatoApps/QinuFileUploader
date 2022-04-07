@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Collections.Generic;
 
-namespace Workshop.Infrastructure.Helper
+namespace QinuFileUploader.Helper
 {
     public class LogHelper
     {
@@ -14,7 +14,7 @@ namespace Workshop.Infrastructure.Helper
 
         private static readonly string FilePath;
 
-        private static Boolean _autoResetEventFlag = false;
+        private static bool _autoResetEventFlag = false;
         private static readonly AutoResetEvent _aEvent = new AutoResetEvent(false);
         private static bool _flag = true;
         public static bool LogFlag = true;
@@ -75,7 +75,7 @@ namespace Workshop.Infrastructure.Helper
                     {
                         Directory.CreateDirectory(FilePath);
                     }
-                    string singleName="log_" + DateTime.Now.ToString("yyyy-MM-dd") + ".txt";
+                    string singleName = "log_" + DateTime.Now.ToString("yyyy-MM-dd") + ".txt";
                     string fileName = Path.Combine(FilePath, singleName);
                     var logStreamWriter = new StreamWriter(fileName, true);
                     while (MsgQueue.Count > 0)
@@ -96,8 +96,8 @@ namespace Workshop.Infrastructure.Helper
                             logStreamWriter = new StreamWriter(fileName, true);
                         }
                         //下面用于DbgView.exe工具进行在线调试
-                        System.Diagnostics.Debug.WriteLine("BS_Debug:" + msg);
-                        System.Diagnostics.Trace.WriteLine("BS_Release:" + msg);
+                        Debug.WriteLine("BS_Debug:" + msg);
+                        Trace.WriteLine("BS_Release:" + msg);
                     }
                     logStreamWriter.Flush();
                     logStreamWriter.Close();

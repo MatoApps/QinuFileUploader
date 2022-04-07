@@ -2,8 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using QinuFileUploader.Service;
-using Workshop.Service.Manager;
-using Workshop.ViewModel;
+using QinuFileUploader.ViewModel;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.

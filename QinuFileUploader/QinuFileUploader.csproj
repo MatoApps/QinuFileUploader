@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0-windows10.0.19041.0</TargetFramework>
@@ -22,17 +22,6 @@
     <AppxPackageDir>D:\Example\QinuFileUploader\\AppPackages\</AppxPackageDir>
     <PackageCertificateKeyFile>QinuFileUploader_TemporaryKey.pfx</PackageCertificateKeyFile>
   </PropertyGroup>
-  <ItemGroup>
-    <Content Remove="Assets\README.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Remove="Assets\folder.png" />
-    <None Remove="Assets\imageLoad.png" />
-    <None Remove="Assets\README.txt" />
-    <None Remove="View\BucketListPage.xaml" />
-    <None Remove="View\CreateFolderPage.xaml" />
-    <None Remove="View\SettingsPage.xaml" />
-  </ItemGroup>
 
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />

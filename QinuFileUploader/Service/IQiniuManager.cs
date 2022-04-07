@@ -1,9 +1,9 @@
 ﻿using Qiniu.Storage;
+using QinuFileUploader.Model.Qiniu;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Workshop.Model.Qiniu;
 
-namespace Workshop.Service.Manager
+namespace QinuFileUploader.Service
 {
     public interface IQiniuManager
     {

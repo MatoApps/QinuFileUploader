@@ -1,13 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Newtonsoft.Json;
+using QinuFileUploader.Model.Qiniu;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Workshop.Model.Qiniu;
 
-namespace Workshop.Model
+namespace QinuFileUploader.Model
 {
     public class SettingInfo : ObservableObject
     {
@@ -45,7 +45,9 @@ namespace Workshop.Model
         public QiniuRegion StorageRegion
         {
             get { return _storageRegion; }
-            set { _storageRegion = value;
+            set
+            {
+                _storageRegion = value;
                 OnPropertyChanged(nameof(StorageRegion));
 
             }
@@ -57,8 +59,10 @@ namespace Workshop.Model
         public string CallbackUrl
         {
             get { return _callbackUrl; }
-            set { _callbackUrl = value; 
-            
+            set
+            {
+                _callbackUrl = value;
+
                 OnPropertyChanged(nameof(CallbackUrl));
             }
         }
@@ -69,8 +73,10 @@ namespace Workshop.Model
         public string CallbackBody
         {
             get { return _callbackBody; }
-            set { _callbackBody = value; 
-            
+            set
+            {
+                _callbackBody = value;
+
                 OnPropertyChanged(nameof(CallbackBody));
             }
         }

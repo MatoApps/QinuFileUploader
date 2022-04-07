@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace Workshop.Infrastructure.Helper
+namespace QinuFileUploader.Helper
 {
 
     /// <summary>
@@ -252,7 +252,7 @@ namespace Workshop.Infrastructure.Helper
             dir = dir.Replace("/", "\\");
             if (dir.IndexOf("\\") > -1)
                 CreateDir(dir.Substring(0, dir.LastIndexOf("\\")));
-            System.IO.StreamWriter sw = new System.IO.StreamWriter(dir, false, System.Text.Encoding.GetEncoding("UTF-8"));
+            StreamWriter sw = new StreamWriter(dir, false, Encoding.GetEncoding("UTF-8"));
             sw.Write(pagestr);
             sw.Close();
         }
@@ -627,7 +627,7 @@ namespace Workshop.Infrastructure.Helper
             var str = new List<string>();
             using (var sr = new StreamReader(filePath, Encoding))
             {
-                String input;
+                string input;
                 while ((input = sr.ReadLine()) != null)
                 {
                     str.Add(input);

@@ -5,10 +5,8 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Workshop.Infrastructure.Helper;
-using Workshop.Model;
 
-namespace Workshop.Service
+namespace QinuFileUploader.Helper
 {
     public class LocalDataHelper
     {
@@ -58,7 +56,7 @@ namespace Workshop.Service
                     return deserializedobj;
                 }
             }
-            return default(T);
+            return default;
         }
 
         public static void SaveObjectLocal<T>(T source) where T : class

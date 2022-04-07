@@ -8,7 +8,7 @@ namespace QinuFileUploader.Model.LocalFile
 {
     public class LocalFile : IFileInfo
     {
-        private const string folderType = "application/local-object-manager";
+        public const string FolderType = "application/local-object-manager";
 
         public string FileName { get; set; }
         public string FileType { get; set; }
@@ -20,17 +20,12 @@ namespace QinuFileUploader.Model.LocalFile
 
         public void SetFolderType()
         {
-            this.FileType = folderType;
+            this.FileType = FolderType;
+            Type = FileInfoType.Folder;
+
         }
 
-        public bool IsFolder
-        {
-            get
-            {
-                return FileType == folderType;
-
-            }
-        }
+        public int Type { get; set; }
 
     }
 }

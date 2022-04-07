@@ -7,7 +7,7 @@ using System.Net.NetworkInformation;
 using System.Text;
 
 
-namespace Workshop.Infrastructure.Helper
+namespace QinuFileUploader.Helper
 {
     public enum Method
     {

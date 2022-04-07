@@ -4,18 +4,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Workshop.Model.Qiniu
+namespace QinuFileUploader.Model.Qiniu
 {
     public class QiniuFile : IFileInfo
     {
-        private const string qiniuFolderType = "application/qiniu-object-manager";
+        public const string QiniuFolderType = "application/qiniu-object-manager";
 
         public string FileName { get; set; }
         public string FileType { get; set; }
         public string StorageType { get; set; }
         public void SetFolderType()
         {
-            this.FileType = qiniuFolderType;
+            FileType = QiniuFolderType;
+            Type = FileInfoType.Folder;
         }
 
         public string FileSize { get; set; }
@@ -38,15 +39,7 @@ namespace Workshop.Model.Qiniu
             }
         }
 
-        public bool IsFolder
-        {
-            get
-            {
-
-                return FileType == qiniuFolderType;
-
-            }
-        }
+        public int Type { get; set; }
 
     }
 }

@@ -8,9 +8,9 @@ using System.Collections.Generic;
 using System.Text;
 using Qiniu.CDN;
 using Qiniu.Storage;
-using Workshop.Infrastructure.Common;
+using QinuFileUploader.Common;
 
-namespace Workshop.Infrastructure.Helper
+namespace QinuFileUploader.Helper
 {
     public class QiniuHelper
     {
@@ -30,7 +30,7 @@ namespace Workshop.Infrastructure.Helper
             long FactSize = 0;
             FactSize = Size;
             if (FactSize < 1024.00)
-                m_strSize = DoubleToString(FactSize)  + " B";
+                m_strSize = DoubleToString(FactSize) + " B";
             else if (FactSize >= 1024.00 && FactSize < 1048576)
                 m_strSize = DoubleToString(FactSize / 1024.00) + " KB";
             else if (FactSize >= 1048576 && FactSize < 1073741824)
@@ -45,7 +45,7 @@ namespace Workshop.Infrastructure.Helper
             string s = data.ToString("F2");
             if (s.EndsWith(".00"))
             {
-                s = s.Substring(0,s.Length - 3);
+                s = s.Substring(0, s.Length - 3);
             }
             return s;
         }
@@ -53,16 +53,16 @@ namespace Workshop.Infrastructure.Helper
         public static string GetDataTime(long unixTimeStamp)
         {
             DateTime startTime = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1)); // 当地时区
-            DateTime dt = startTime.AddSeconds((double)unixTimeStamp/10000000);
+            DateTime dt = startTime.AddSeconds((double)unixTimeStamp / 10000000);
             return dt.ToString("yyyy/MM/dd HH:mm:ss");
         }
 
-        public static bool RefreshUrls(Mac mac,string[] urls)
+        public static bool RefreshUrls(Mac mac, string[] urls)
         {
             CdnManager cdnMgr = new CdnManager(mac);
             var result = cdnMgr.RefreshUrls(urls);
             return result.Code == 200;
-           
+
         }
 
         public static bool RefreshDirs(Mac mac, string[] urls)
@@ -70,10 +70,10 @@ namespace Workshop.Infrastructure.Helper
             CdnManager cdnMgr = new CdnManager(mac);
             var result = cdnMgr.RefreshDirs(urls);
             return result.Code == 200;
-           
+
         }
 
-        public static bool PrefetchUrls(Mac mac, string[] urls,out string Result)
+        public static bool PrefetchUrls(Mac mac, string[] urls, out string Result)
         {
             StringBuilder sb = new StringBuilder();
             CdnManager cdnMgr = new CdnManager(mac);
@@ -89,7 +89,7 @@ namespace Workshop.Infrastructure.Helper
                     sb.Append(url + " ");
                 }
             }
-          
+
             if (result.Code == 200)
             {
 
@@ -110,13 +110,13 @@ namespace Workshop.Infrastructure.Helper
             }
 
             Result = sb.ToString();
-                return false;
-          
-
-           // cdnMgr.RefreshUrlsAndDirs()
+            return false;
 
 
-           
+            // cdnMgr.RefreshUrlsAndDirs()
+
+
+
         }
 
         /// <summary>
@@ -129,11 +129,11 @@ namespace Workshop.Infrastructure.Helper
         /// <param name="newKey">目标文件名</param>
         /// <param name="force">是否设置强制覆盖</param>
         /// <returns></returns>
-        public static ICommonResultInfo Move(BucketManager bucketManager,string bucket, string Key, string newBucket, string newKey, bool force = false)
+        public static ICommonResultInfo Move(BucketManager bucketManager, string bucket, string Key, string newBucket, string newKey, bool force = false)
         {
             HttpResult moveRet = bucketManager.Move(bucket, Key, newBucket, newKey, force);
             CommonResultInfo ar = new CommonResultInfo();
-            if (moveRet.Code == (int) HttpCode.OK)
+            if (moveRet.Code == (int)HttpCode.OK)
             {
                 ar.Errorno = CommonResultInfo.SUCCESS;
                 ar.Msg = moveRet.ToString();
@@ -146,10 +146,10 @@ namespace Workshop.Infrastructure.Helper
             return ar;
         }
 
-        public static string RemoveWindowsFileNameSpicalChar(string str,char repChar='-')
+        public static string RemoveWindowsFileNameSpicalChar(string str, char repChar = '-')
         {
 
-            return str.Replace('\\',repChar).Replace('/', repChar).Replace(':', repChar).Replace('*', repChar).Replace('?', repChar).Replace('"', repChar).Replace('<', repChar).Replace('>', repChar).Replace('|', repChar);
+            return str.Replace('\\', repChar).Replace('/', repChar).Replace(':', repChar).Replace('*', repChar).Replace('?', repChar).Replace('"', repChar).Replace('<', repChar).Replace('>', repChar).Replace('|', repChar);
         }
 
 
