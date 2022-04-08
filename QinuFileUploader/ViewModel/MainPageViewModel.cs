@@ -17,29 +17,29 @@ using QinuFileUploader.Service;
 using QinuFileUploader;
 using Microsoft.UI.Xaml.Controls;
 using QinuFileUploader.Model.Qiniu;
+using Windows.Storage;
 
 namespace QinuFileUploader.ViewModel
 {
-    public class MenuPageViewModel : ObservableObject
+    public class MainPageViewModel : ExplorerViewModel
     {
         private readonly IQiniuManager _qiniuManager;
         private readonly IMimeTypeManager _mimeTypeManager;
 
         private string _rootname;
         public RelayCommand<string> SearchCommand { get; private set; }
-        public RelayCommand NavigationHistoryBackCommand { get; private set; }
-        public RelayCommand NavigationHistoryForwardCommand { get; private set; }
-        public RelayCommand NavigationBackCommand { get; private set; }
         public RelayCommand RefreshCommand { get; private set; }
         public RelayCommand AddImageCommand { get; }
         public RelayCommand AddFolderCommand { get; }
         public RelayCommand ToggleDetailCommand { get; }
         public RelayCommand ToggleTreeCommand { get; }
         public RelayCommand<IFileInfo> RemoveImageCommand { get; private set; }
+        public RelayCommand<IFileInfo> DownloadCommand { get; private set; }
 
-        public MenuPageViewModel(IQiniuManager qiniuManager, IMimeTypeManager mimeTypeManager, SettingsPageViewModel settingsPageViewModel)
+        public MainPageViewModel(IQiniuManager qiniuManager, IMimeTypeManager mimeTypeManager, SettingsPageViewModel settingsPageViewModel) : base()
         {
             _qiniuManager = qiniuManager;
+            _qiniuManager.PropertyChanged += _qiniuManager_PropertyChanged;
             _mimeTypeManager = mimeTypeManager;
 
             settingsPageViewModel.OnSubmit += SettingsPageViewModel_OnSubmit;
@@ -48,29 +48,74 @@ namespace QinuFileUploader.ViewModel
             PropertyChanged += MenuPageViewModel_PropertyChanged;
 
             //init commands
-            RefreshCommand = new RelayCommand(RefreshAction);
-            NavigationHistoryBackCommand = new RelayCommand(NavigationHistoryBack);
-            NavigationHistoryForwardCommand = new RelayCommand(NavigationHistoryForward);
-            NavigationBackCommand = new RelayCommand(NavigationBack);
-
-            SearchCommand = new RelayCommand<string>(SearchAction, (s) => CanCurrentExplorerItemRelevantDo());
-            AddImageCommand = new RelayCommand(AddImageAction, () => CanCurrentExplorerItemRelevantDo());
-            AddFolderCommand = new RelayCommand(AddFolderAction, () => CanCurrentExplorerItemRelevantDo());
-            RemoveImageCommand = new RelayCommand<IFileInfo>(RemoveImageAction, (f) => CanCurrentExplorerItemRelevantDo() && SelectedFileInfo != null);
-
+            RefreshCommand = new RelayCommand(RefreshAction, () => IsServiceIdle());
+            SearchCommand = new RelayCommand<string>(SearchAction, (s) => CanCurrentExplorerItemRelevantDo() && IsServiceIdle());
+            AddImageCommand = new RelayCommand(AddImageAction, () => CanCurrentExplorerItemRelevantDo() && IsServiceIdle());
+            AddFolderCommand = new RelayCommand(AddFolderAction, () => CanCurrentExplorerItemRelevantDo() && IsServiceIdle());
+            RemoveImageCommand = new RelayCommand<IFileInfo>(RemoveImageAction, (f) => CanCurrentExplorerItemRelevantDo() && SelectedFileInfo != null && IsServiceIdle());
+            DownloadCommand = new RelayCommand<IFileInfo>(DownloadActionAsync, (f) => CanCurrentExplorerItemRelevantDo() && SelectedFileInfo != null && IsServiceIdle());
             ToggleDetailCommand = new RelayCommand(ToggleDetailAction);
             ToggleTreeCommand = new RelayCommand(ToggleTreeAction);
 
 
             //init data
-            NavigationStack = new ObservableCollectionEx<ExplorerItem>();
-            NavigationHistoryStack = new ObservableCollectionEx<ExplorerItem>();
-            KeyWord = "";
 
+            KeyWord = "";
             PathStack = new ObservableCollection<string>();
             IsShowDetail = false;
             IsShowTree = true;
             InitData();
+
+        }
+
+        private void _qiniuManager_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(_qiniuManager.IsBusy))
+            {
+                if (App.Window == null)
+                {
+                    return;
+                }
+                App.Window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
+               {
+
+                   RefreshCommand.NotifyCanExecuteChanged();
+                   SearchCommand.NotifyCanExecuteChanged();
+                   AddImageCommand.NotifyCanExecuteChanged();
+                   AddFolderCommand.NotifyCanExecuteChanged();
+                   RemoveImageCommand.NotifyCanExecuteChanged();
+                   DownloadCommand.NotifyCanExecuteChanged();
+
+               });
+
+            }
+        }
+
+        private async void DownloadActionAsync(IFileInfo obj)
+        {
+            if (obj == null || obj.Type == FileInfoType.Folder)
+            {
+                return;
+            }
+            var currentDomainsResult = await _qiniuManager.SetCurrentDomain(_qiniuManager.Bucket);
+
+            var extenstion = Path.GetExtension(obj.FileName);
+            var fileName = Path.GetFileNameWithoutExtension(obj.FileName);
+
+            var picker = new FileSavePicker();
+            picker.DefaultFileExtension = extenstion;
+            picker.FileTypeChoices.Add(obj.FileType, new List<string>() { extenstion });
+            picker.SuggestedFileName = fileName;
+            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+
+            UIHelper.InitFileOpenPicker(picker);
+
+            var files = await picker.PickSaveFileAsync();
+            if (files != null)
+            {
+                _qiniuManager.DownLoad(new List<QiniuFile>() { obj as QiniuFile }, files.Path);
+
+            }
 
         }
 
@@ -101,6 +146,12 @@ namespace QinuFileUploader.ViewModel
                 Content = createFolderPagePage,
                 PrimaryButtonText = "确定"
             };
+            if (string.IsNullOrEmpty(folderName))
+            {
+                await UIHelper.ShowAsync("不能创建名称为空的文件夹哦");
+            }
+
+
             contentDialog.XamlRoot = App.Window.Content.XamlRoot;
             await contentDialog.ShowAsync();
             var file = "README.txt";
@@ -122,6 +173,12 @@ namespace QinuFileUploader.ViewModel
         private bool CanCurrentExplorerItemRelevantDo()
         {
             return CurrentExplorerItem != null;
+        }
+
+        private bool IsServiceIdle()
+        {
+            return !_qiniuManager.IsBusy;
+
         }
 
         private void SettingsPageViewModel_OnSubmit(object sender, EventArgs e)
@@ -147,8 +204,7 @@ namespace QinuFileUploader.ViewModel
 
         private void ClearData()
         {
-            NavigationStack.Clear();
-            NavigationHistoryStack.Clear();
+            ClearStack();
             RootExplorerItems?.Clear();
             CurrentFileInfos = null;
             CurrentExplorerItem = null;
@@ -160,7 +216,7 @@ namespace QinuFileUploader.ViewModel
             var targetPath = EnsureOriginUrl(CurrentExplorerItem.Path);
             targetPath += ExplorerItem.SpliterChar;
             var subRoot = await GenerateExplorerRoot(CurrentExplorerItem.Name, targetPath);
-            if (subRoot != null && subRoot.Name== CurrentExplorerItem.Name)
+            if (subRoot != null && subRoot.Name == CurrentExplorerItem.Name)
             {
 
                 var subRootChildren = subRoot.Children;
@@ -219,13 +275,7 @@ namespace QinuFileUploader.ViewModel
             {
                 targetDirectoryPath = string.Empty;
             }
-
-            var fileInfos = await _qiniuManager.Search(_qiniuManager.Bucket, targetPath);
-            var currentFileInfos = new ObservableCollectionEx<IFileInfo>(fileInfos.Where(c =>
-            {
-                return Path.GetDirectoryName(c.FileName) == targetDirectoryPath && c.Type == FileInfoType.File;
-            }).OrderBy(c => c.Type));
-
+            var currentFileInfos = new ObservableCollectionEx<IFileInfo>();
             foreach (var childItem in CurrentExplorerItem.Children)
             {
                 var newModule = new QiniuFile();
@@ -233,6 +283,17 @@ namespace QinuFileUploader.ViewModel
                 newModule.SetFolderType();
                 currentFileInfos.Add(newModule);
 
+            }
+
+            var fileInfos = await _qiniuManager.Search(_qiniuManager.Bucket, targetPath);
+            var currentFileInfoList = fileInfos.Where(c =>
+            {
+                return Path.GetDirectoryName(c.FileName) == targetDirectoryPath && c.Type == FileInfoType.File;
+            }).OrderBy(c => c.Type);
+
+            foreach (var item in currentFileInfoList)
+            {
+                currentFileInfos.Add(item);
             }
 
             currentFileInfos.CollectionChanged += FileInfos_CollectionChangedAsync;
@@ -271,7 +332,7 @@ namespace QinuFileUploader.ViewModel
             _rootname = _qiniuManager.Bucket;
             var root = await GenerateExplorerRoot(_qiniuManager.Bucket);
 
-            RootExplorerItems = new ObservableCollectionEx<ExplorerItem>() { root };
+            RootExplorerItems = new ObservableCollectionEx<IExplorerItem>() { root };
 
             NavigationHistoryStack.Add(root);
             NavigationStack.Add(root);
@@ -279,7 +340,7 @@ namespace QinuFileUploader.ViewModel
             CurrentExplorerItem = RootExplorerItems.FirstOrDefault();
         }
 
-        private async Task<ExplorerItem> GenerateExplorerRoot(string rootName, string rootPath = "")
+        private async Task<IExplorerItem> GenerateExplorerRoot(string rootName, string rootPath = "")
         {
             var fgalleryList = await _qiniuManager.Search(_qiniuManager.Bucket, rootPath);
             var folders = fgalleryList.Where(c => c.Type == FileInfoType.Folder).GroupBy(c => c.FileName).Select(c =>
@@ -316,7 +377,7 @@ namespace QinuFileUploader.ViewModel
                 }
             }
 
-            ExplorerItem root = null;
+            IExplorerItem root = null;
             foreach (var folder in folders)
             {
                 var trimdFolder = rootName + ExplorerItem.SpliterChar + folder;
@@ -326,7 +387,7 @@ namespace QinuFileUploader.ViewModel
                 }
                 var pathArray = trimdFolder.Split(ExplorerItem.SpliterChar);
 
-                void b(ref ExplorerItem current, int index)
+                void b(ref IExplorerItem current, int index)
                 {
                     if (index == pathArray.Length - 1)
                     {
@@ -343,7 +404,7 @@ namespace QinuFileUploader.ViewModel
                         var currentExplorerItem = new ExplorerItem()
                         {
                             Name = pathArray[pathArray.Length - 1],
-                            Type = ExplorerItem.ExplorerItemType.Folder,
+                            Type = ExplorerItemType.Folder,
                             Path = path
                         };
                         var appendItem = a(currentExplorerItem, pathArray.Length - 2, index);
@@ -354,13 +415,13 @@ namespace QinuFileUploader.ViewModel
 
                 }
 
-                ExplorerItem a(ExplorerItem ex, int index, int stopIndex = 0)
+                IExplorerItem a(IExplorerItem ex, int index, int stopIndex = 0)
                 {
                     if (index == stopIndex)
                     {
                         return ex;
                     }
-                    var children = new ObservableCollectionEx<ExplorerItem>();
+                    var children = new ObservableCollectionEx<IExplorerItem>();
                     children.Add(ex);
                     var path = string.Join(ExplorerItem.SpliterChar, pathArray, 0, index + 1);
 
@@ -368,7 +429,7 @@ namespace QinuFileUploader.ViewModel
                     {
                         Name = pathArray[index],
                         Path = path,
-                        Type = ExplorerItem.ExplorerItemType.Folder,
+                        Type = ExplorerItemType.Folder,
                         Children = children
                     };
                     return a(e, index - 1);
@@ -380,7 +441,7 @@ namespace QinuFileUploader.ViewModel
                         root = new ExplorerItem()
                         {
                             Name = pathArray[0],
-                            Type = ExplorerItem.ExplorerItemType.Folder,
+                            Type = ExplorerItemType.Folder,
                             Path = pathArray[0]
                         };
                     }
@@ -537,208 +598,6 @@ namespace QinuFileUploader.ViewModel
 
 
 
-
-        private void NavigationBack()
-        {
-            if (NavigationStack.Count == 1)
-            {
-                return;
-            }
-            NavigationStack.Pop();
-            var lastItem = NavigationStack.LastOrDefault();
-            if (lastItem == null)
-            {
-                return;
-            }
-            if (ToFolder(lastItem))
-            {
-
-                NavigationHistoryStack.ForEach((element) =>
-                {
-                    element.IsCurrent = false;
-                });
-                lastItem.IsCurrent = true;
-
-                PushNavigationHistoryStack(lastItem);
-            }
-        }
-        private void PushNavigationHistoryStack(ExplorerItem item)
-        {
-            var newItem = new ExplorerItem
-            {
-                Name = item.Name,
-                Path = item.Path,
-                IsCurrent = item.IsCurrent,
-                Type = item.Type,
-                Children = item.Children,
-                IsExpanded = false
-            };
-
-            if (NavigationHistoryStack.Count > 10)
-            {
-                NavigationHistoryStack.Pop();
-            }
-            NavigationHistoryStack.Unshift(newItem);
-        }
-
-        private void DealWithNavigationStack(ExplorerItem folder)
-        {
-
-            NavigationStack.Clear();
-            var paths = folder.Path.Split(ExplorerItem.SpliterChar);
-
-
-            void a(IEnumerable<ExplorerItem> ex, int index)
-            {
-                if (index > paths.Length - 1)
-                {
-                    return;
-                }
-
-                var currentName = paths[index];
-                var currentExplorerItem = ex.FirstOrDefault(c => c.Name == currentName);
-                if (currentExplorerItem == null)
-                {
-                    return;
-
-                }
-                NavigationStack.Push(currentExplorerItem);
-                a(currentExplorerItem.Children, index + 1);
-            }
-            a(RootExplorerItems, 0);
-        }
-
-        public void NavigationTo(ExplorerItem folder)
-        {
-            DealWithNavigationStack(folder);
-            if (ToFolder(folder))
-            {
-                NavigationHistoryStack.ForEach((element) =>
-                {
-                    element.IsCurrent = false;
-                });
-                folder.IsCurrent = true;
-                PushNavigationHistoryStack(folder);
-            }
-        }
-
-        private void NavigationHistoryBack()
-        {
-            var currentIndex = NavigationHistoryStack.IndexOf(
-              (c) => c.IsCurrent
-            );
-            if (currentIndex < NavigationHistoryStack.Count - 1)
-            {
-                var forwardIndex = currentIndex + 1;
-
-                var folder = NavigationHistoryStack[forwardIndex];
-                DealWithNavigationStack(folder);
-
-                if (ToFolder(folder))
-                {
-                    NavigationHistoryStack.ForEach((element) =>
-                    {
-                        element.IsCurrent = false;
-                    });
-                    NavigationHistoryStack[forwardIndex].IsCurrent = true;
-                }
-            }
-        }
-
-        private void NavigationHistoryForward()
-        {
-
-            var currentIndex = NavigationHistoryStack.IndexOf(
-              (c) => c.IsCurrent
-            );
-            if (currentIndex > 0)
-            {
-                var forwardIndex = currentIndex - 1;
-
-                var folder = NavigationHistoryStack[forwardIndex];
-                DealWithNavigationStack(folder);
-
-                if (ToFolder(folder))
-                {
-                    NavigationHistoryStack.ForEach((element) =>
-                    {
-                        element.IsCurrent = false;
-                    });
-                    NavigationHistoryStack[forwardIndex].IsCurrent = true;
-                }
-            }
-        }
-
-        private bool ToFolder(ExplorerItem item)
-        {
-            if (item == null || item.Path == CurrentExplorerItem.Path)
-            {
-                return false;
-            }
-            //var paths = item.Path.Split(ExplorerItem.SpliterChar);
-
-            //ExplorerItem a(IEnumerable<ExplorerItem> ex, int index)
-            //{
-            //    if (index > paths.Length - 1)
-            //    {
-            //        return null;
-            //    }
-
-            //    var currentName = paths[index];
-            //    var currentExplorerItem = ex.FirstOrDefault(c => c.Name == currentName);
-            //    if (currentExplorerItem == null)
-            //    {
-            //        return null;
-            //    }
-            //    return a(currentExplorerItem.Children, index + 1);
-            //}
-            //var currentExplorerItem = a(this.RootExplorerItems, 0);
-
-            var currentExplorerItem = NavigationStack.FirstOrDefault(c => c.Path == item.Path);
-
-            if (currentExplorerItem == null)
-            {
-                return false;
-            }
-
-            CurrentExplorerItem = currentExplorerItem;
-            return true;
-        }
-
-
-        private bool GetIsCurrentHistoryNavigationItem(ExplorerItem item)
-        {
-            var result = item.IsCurrent;
-            return result;
-        }
-
-
-
-        private ObservableCollectionEx<ExplorerItem> _navigationStack;
-
-        public ObservableCollectionEx<ExplorerItem> NavigationStack
-        {
-            get { return _navigationStack; }
-            set
-            {
-                _navigationStack = value;
-                OnPropertyChanged(nameof(NavigationStack));
-            }
-        }
-
-        private ObservableCollectionEx<ExplorerItem> _navigationHistoryStack;
-
-        public ObservableCollectionEx<ExplorerItem> NavigationHistoryStack
-        {
-            get { return _navigationHistoryStack; }
-            set
-            {
-                _navigationHistoryStack = value;
-                OnPropertyChanged(nameof(NavigationHistoryStack));
-            }
-        }
-
-
         private ObservableCollectionEx<IFileInfo> _currentFileInfos;
 
         public ObservableCollectionEx<IFileInfo> CurrentFileInfos
@@ -763,30 +622,6 @@ namespace QinuFileUploader.ViewModel
             }
         }
 
-        private ObservableCollectionEx<ExplorerItem> _rootExplorerItem;
-
-        public ObservableCollectionEx<ExplorerItem> RootExplorerItems
-        {
-            get { return _rootExplorerItem; }
-            set
-            {
-                _rootExplorerItem = value;
-                OnPropertyChanged(nameof(RootExplorerItems));
-            }
-        }
-
-        private ExplorerItem _currentExplorerItem;
-
-        public ExplorerItem CurrentExplorerItem
-        {
-            get { return _currentExplorerItem; }
-            set
-            {
-                _currentExplorerItem = value;
-                OnPropertyChanged(nameof(CurrentExplorerItem));
-
-            }
-        }
 
 
         private ObservableCollection<string> _pathStack;

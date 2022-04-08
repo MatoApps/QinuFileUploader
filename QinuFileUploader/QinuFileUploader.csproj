@@ -21,7 +21,11 @@
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
     <AppxPackageDir>D:\Example\QinuFileUploader\\AppPackages\</AppxPackageDir>
     <PackageCertificateKeyFile>QinuFileUploader_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <Content Remove="Assets\logo.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />

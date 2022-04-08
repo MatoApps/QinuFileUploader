@@ -1,11 +1,12 @@
 ﻿using Qiniu.Storage;
 using QinuFileUploader.Model.Qiniu;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace QinuFileUploader.Service
 {
-    public interface IQiniuManager
+    public interface IQiniuManager: INotifyPropertyChanged
     {
         string Bucket { get; set; }
         List<string> BucketList { get; set; }

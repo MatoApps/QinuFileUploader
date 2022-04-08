@@ -22,7 +22,7 @@
                    HorizontalAlignment="Left" 
                    Width="16" Height="16" 
                    Margin="8,0"/>
-            <TextBlock x:Name="AppTitleTextBlock" Text="App title"
+            <TextBlock x:Name="AppTitleTextBlock" Text="Mato FileManager for Qiniu"
                        TextWrapping="NoWrap"
                        Style="{StaticResource CaptionTextBlockStyle}" 
                        VerticalAlignment="Center"
@@ -158,7 +158,7 @@
                          Command="{Binding ToggleTreeCommand}" 
                         >
 
-                            <FontIcon  FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xEA4C;"/>
+                            <FontIcon   Style="{StaticResource SideBarButtonTextStyle}" Glyph="&#xE700;"/>
 
                         </ToggleButton>
                         <ToggleButton
@@ -168,13 +168,13 @@
                          Command="{Binding ToggleDetailCommand}"
                         >
 
-                            <FontIcon  FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xEA4B;"/>
+                            <FontIcon   Style="{StaticResource SideBarButtonTextStyle}" Glyph="&#xEA4C;"/>
 
                         </ToggleButton>
                         <Button
                          Style="{StaticResource NavigationBarButtonStyle}" 
                         >
-                            <FontIcon  FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE713;"/>
+                            <FontIcon   Style="{StaticResource SideBarButtonTextStyle}" Glyph="&#xE713;"/>
                             <Button.Flyout>
                                 <Flyout>
                                     <StackPanel>
@@ -280,8 +280,9 @@
                             <Grid Grid.Row="0">
                                 <CommandBar Background="Transparent" HorizontalAlignment="Left" IsOpen="False" DefaultLabelPosition="Right">
                                     <AppBarButton Icon="Add" Label="上传"  Command="{Binding AddImageCommand}"/>
-                                    <AppBarButton Icon="Add" Label="新建文件夹"  Command="{Binding AddFolderCommand}"/>
+                                    <AppBarButton Icon="NewFolder" Label="新建文件夹"  Command="{Binding AddFolderCommand}"/>
                                     <AppBarButton Icon="Delete" Label="删除"  Command="{ Binding RemoveImageCommand}" CommandParameter="{Binding SelectedFileInfo}" />
+                                    <AppBarButton Icon="Download" Label="下载"  Command="{ Binding DownloadCommand}" CommandParameter="{Binding SelectedFileInfo}" />
 
                                 </CommandBar>
 

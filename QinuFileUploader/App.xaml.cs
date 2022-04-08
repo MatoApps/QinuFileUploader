@@ -35,7 +35,7 @@ namespace QinuFileUploader
                     .AddSingleton<IQiniuManager, QiniuManager>()
                     .AddSingleton<IMimeTypeManager, MimeTypeManager>()
                     //ViewModels
-                    .AddSingleton<MenuPageViewModel>()
+                    .AddSingleton<MainPageViewModel>()
                     .AddSingleton<SettingsPageViewModel>()
                     .BuildServiceProvider());
             }

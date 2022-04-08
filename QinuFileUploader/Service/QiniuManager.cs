@@ -1,4 +1,5 @@
 ﻿
+using CommunityToolkit.Mvvm.ComponentModel;
 using Newtonsoft.Json;
 using Qiniu.Http;
 using Qiniu.Storage;
@@ -20,7 +21,7 @@ using System.Windows;
 
 namespace QinuFileUploader.Service
 {
-    public class QiniuManager : IQiniuManager
+    public class QiniuManager : ObservableObject, IQiniuManager
     {
         private Mac mac;
         private Config config;
@@ -36,8 +37,22 @@ namespace QinuFileUploader.Service
         }
 
 
+        private bool _isBusy;
 
-        public bool IsBusy { get; set; }
+        public bool IsBusy
+        {
+            get { return _isBusy; }
+            set
+            {
+
+                _isBusy = value;
+
+                OnPropertyChanged(nameof(IsBusy));
+
+            }
+        }
+
+
         private List<string> _bucketList;
 
         public List<string> BucketList
@@ -205,7 +220,7 @@ namespace QinuFileUploader.Service
         }
 
 
-        public void DownLoad(List<QiniuFile> list, string fileSaveDir)
+        public void DownLoad(List<QiniuFile> list, string saveFile)
         {
             if (IsBusy == true)
             {
@@ -233,13 +248,6 @@ namespace QinuFileUploader.Service
                                 return;
                             }
 
-                            string saveFile = Path.Combine(fileSaveDir, info.FileName.Replace('/', '-'));
-                            if (File.Exists(saveFile))
-                            {
-                                saveFile = Path.Combine(fileSaveDir,
-                                    Path.GetFileNameWithoutExtension(info.FileName.Replace('/', '-')) + Guid.NewGuid() +
-                                    Path.GetExtension(info.FileName));
-                            }
                             HttpResult result = DownloadManager.Download(pubfile, saveFile);
                             if (result.Code != 200)
                             {
@@ -253,7 +261,6 @@ namespace QinuFileUploader.Service
                             }
 
                         }
-                        await UIHelper.ShowAsync(string.IsNullOrWhiteSpace(rresult.ToString()) ? "下载结束！" : rresult.ToString());
                     }
                     else
                     {

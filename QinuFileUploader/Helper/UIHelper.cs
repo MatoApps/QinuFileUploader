@@ -39,7 +39,7 @@ namespace QinuFileUploader.Helper
         }
 
 
-        public static void InitFileOpenPicker(FileOpenPicker picker)
+        public static void InitFileOpenPicker(IWinRTObject picker)
         {
             if (Window.Current == null)
             {

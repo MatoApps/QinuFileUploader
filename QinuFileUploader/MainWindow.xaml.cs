@@ -29,7 +29,7 @@ namespace QinuFileUploader
         public MainWindow()
         {
             this.InitializeComponent();
-            this.MainFrame.DataContext = Ioc.Default.GetRequiredService<MenuPageViewModel>();
+            this.MainFrame.DataContext = Ioc.Default.GetRequiredService<MainPageViewModel>();
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(AppTitleBar);
             Activated += MainWindow_Activated;
@@ -51,12 +51,12 @@ namespace QinuFileUploader
 
         private void TreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
         {
-            (this.MainFrame.DataContext as MenuPageViewModel).NavigationTo((ExplorerItem)args.InvokedItem);
+            (this.MainFrame.DataContext as MainPageViewModel).NavigationTo((ExplorerItem)args.InvokedItem);
         }
 
         private void BasicGridView_ItemClick(object sender, ItemClickEventArgs e)
         {
-            (this.MainFrame.DataContext as MenuPageViewModel).SelectedFileInfo = (IFileInfo)e.ClickedItem;
+            (this.MainFrame.DataContext as MainPageViewModel).SelectedFileInfo = (IFileInfo)e.ClickedItem;
 
         }
 
@@ -70,10 +70,10 @@ namespace QinuFileUploader
             }
             if (targetFile.Type == FileInfoType.Folder)
             {
-                var targetFolder = (this.MainFrame.DataContext as MenuPageViewModel).CurrentExplorerItem.Children.FirstOrDefault(c => c.Name == targetFile.FileName);
+                var targetFolder = (this.MainFrame.DataContext as MainPageViewModel).CurrentExplorerItem.Children.FirstOrDefault(c => c.Name == targetFile.FileName);
                 if (targetFolder != null)
                 {
-                    (this.MainFrame.DataContext as MenuPageViewModel).NavigationTo(targetFolder);
+                    (this.MainFrame.DataContext as MainPageViewModel).NavigationTo(targetFolder);
 
                 }
 
