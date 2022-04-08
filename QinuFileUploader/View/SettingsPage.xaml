@@ -65,6 +65,8 @@
             </Grid>
         </StackPanel>
         <StackPanel  Margin="10,0" Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" >
+            <Button  Content="重新载入" Style="{StaticResource TextBlockButtonStyle}" x:Name="ReloadButton"  Command="{Binding ReloadCommand}" Width="120"></Button>
+
             <Button  Content="应用" x:Name="SaveToButton"  Command="{Binding SubmitCommand}" Width="120"></Button>
 
         </StackPanel>

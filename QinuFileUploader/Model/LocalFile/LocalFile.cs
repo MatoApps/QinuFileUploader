@@ -1,8 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using System.IO;
+using System.Net.Http;
+using Microsoft.UI.Xaml.Media;
+using QinuFileUploader.Service;
+using Microsoft.UI.Xaml.Media.Imaging;
+using CommunityToolkit.Mvvm.DependencyInjection;
 
 namespace QinuFileUploader.Model.LocalFile
 {
@@ -26,6 +29,27 @@ namespace QinuFileUploader.Model.LocalFile
         }
 
         public int Type { get; set; }
+
+        public ImageSource ImageSource => GetImageSource(Path).Result;
+        public async Task<ImageSource> GetImageSource(string value)
+        {
+            var mimeTypeManager = Ioc.Default.GetRequiredService<IMimeTypeManager>();
+            BitmapSource bitmapSource = null;
+            if (mimeTypeManager.GetMimeType(System.IO.Path.GetExtension(value.ToString())).StartsWith("image/"))
+            {
+                BitmapImage bitmapImage = new BitmapImage();
+                bitmapImage.UriSource = new Uri(value);
+                bitmapSource = bitmapImage;
+            }
+            else
+            {
+                BitmapImage bitmapImage = new BitmapImage();
+                bitmapImage.UriSource = new Uri("ms-appx:///Assets/file.png");
+                bitmapSource = bitmapImage;
+            }
+
+            return bitmapSource;
+        }
 
     }
 }

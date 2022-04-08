@@ -11,7 +11,7 @@ namespace QinuFileUploader.Model
 
     public class ExplorerItem : ObservableObject
     {
-        public static char SpliterChar = '/';
+        public const char SpliterChar = '/';
 
         public enum ExplorerItemType { Folder, File };
         public string Name { get; set; }

@@ -7,7 +7,7 @@
     mc:Ignorable="d">
 
     <Grid>
-        <TextBox Text="{x:Bind CurrentName, Mode=TwoWay}"></TextBox>
+        <TextBox Text="{x:Bind CurrentName, Mode=TwoWay}" x:Name="NameTextBox"></TextBox>
     </Grid>
 
 </Page>

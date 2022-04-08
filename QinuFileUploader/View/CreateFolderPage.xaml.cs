@@ -19,6 +19,8 @@ namespace QinuFileUploader
         {
             this.InitializeComponent();
             CurrentName = "新建文件夹";
+            this.NameTextBox.SelectAll();
+
         }
 
 

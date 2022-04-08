@@ -60,5 +60,27 @@ namespace QinuFileUploader
 
         }
 
+        private void Grid_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        {
+
+            var targetFile = (e.OriginalSource as FrameworkElement).DataContext as IFileInfo;
+            if (targetFile == null)
+            {
+                return;
+            }
+            if (targetFile.Type == FileInfoType.Folder)
+            {
+                var targetFolder = (this.MainFrame.DataContext as MenuPageViewModel).CurrentExplorerItem.Children.FirstOrDefault(c => c.Name == targetFile.FileName);
+                if (targetFolder != null)
+                {
+                    (this.MainFrame.DataContext as MenuPageViewModel).NavigationTo(targetFolder);
+
+                }
+
+            }
+
+
+
+        }
     }
 }

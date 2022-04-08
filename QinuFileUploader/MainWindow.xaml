@@ -306,13 +306,13 @@
 
                                 <GridView.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid Width="100" Height="120">
+                                        <Grid Width="100" Height="120" DoubleTapped="Grid_DoubleTapped">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition></RowDefinition>
                                                 <RowDefinition Height="Auto"></RowDefinition>
                                             </Grid.RowDefinitions>
                                             <Image Grid.Row="0" Visibility="{Binding Type, Converter={StaticResource isValueToVisibilityConverter}, ConverterParameter=1}" Width="90" Source="/Assets/folder.png"/>
-                                            <Image Grid.Row="0" Visibility="{Binding Type, Converter={StaticResource isValueToVisibilityConverter}, ConverterParameter=2}" Source="{Binding Path}" Width="90" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <Image Grid.Row="0" Visibility="{Binding Type, Converter={StaticResource isValueToVisibilityConverter}, ConverterParameter=2}" Source="{Binding ImageSource}" Width="90" HorizontalAlignment="Center" VerticalAlignment="Center"></Image>
                                             <TextBlock HorizontalAlignment="Center" Grid.Row="1" Text="{Binding FileName, Converter={StaticResource absoluteNameConverter}}"  Style="{ThemeResource CaptionTextBlockStyle}"></TextBlock>
                                             <Grid Grid.Row="0" Grid.RowSpan="2" 
                                                   Visibility="{Binding Converter={StaticResource isTypeToVisibilityConverter},ConverterParameter=QinuFileUploader.Model.LocalFile.LocalFile}"

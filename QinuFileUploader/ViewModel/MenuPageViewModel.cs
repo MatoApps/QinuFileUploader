@@ -16,6 +16,7 @@ using Windows.Storage.Pickers;
 using QinuFileUploader.Service;
 using QinuFileUploader;
 using Microsoft.UI.Xaml.Controls;
+using QinuFileUploader.Model.Qiniu;
 
 namespace QinuFileUploader.ViewModel
 {
@@ -42,6 +43,7 @@ namespace QinuFileUploader.ViewModel
             _mimeTypeManager = mimeTypeManager;
 
             settingsPageViewModel.OnSubmit += SettingsPageViewModel_OnSubmit;
+            settingsPageViewModel.OnReload += SettingsPageViewModel_OnReload;
 
             PropertyChanged += MenuPageViewModel_PropertyChanged;
 
@@ -72,6 +74,11 @@ namespace QinuFileUploader.ViewModel
 
         }
 
+        private void SettingsPageViewModel_OnReload(object sender, EventArgs e)
+        {
+            this.ReloadAction();
+        }
+
         private async void AddFolderAction()
         {
             var folderName = "";
@@ -92,7 +99,7 @@ namespace QinuFileUploader.ViewModel
             {
                 Title = "请键入文件夹名称",
                 Content = createFolderPagePage,
-                PrimaryButtonText = "继续"
+                PrimaryButtonText = "确定"
             };
             contentDialog.XamlRoot = App.Window.Content.XamlRoot;
             await contentDialog.ShowAsync();
@@ -119,13 +126,7 @@ namespace QinuFileUploader.ViewModel
 
         private void SettingsPageViewModel_OnSubmit(object sender, EventArgs e)
         {
-            NavigationStack.Clear();
-            NavigationHistoryStack.Clear();
-            RootExplorerItems?.Clear();
-            CurrentFileInfos = null;
-            CurrentExplorerItem = null;
-            SelectedFileInfo = null;
-            InitData();
+            ReloadAction();
         }
 
         private void ToggleTreeAction()
@@ -138,12 +139,41 @@ namespace QinuFileUploader.ViewModel
             IsShowDetail = !IsShowDetail;
         }
 
-        private void RefreshAction()
+        private void ReloadAction()
         {
+            ClearData();
+            InitData();
+        }
+
+        private void ClearData()
+        {
+            NavigationStack.Clear();
+            NavigationHistoryStack.Clear();
             RootExplorerItems?.Clear();
+            CurrentFileInfos = null;
             CurrentExplorerItem = null;
             SelectedFileInfo = null;
-            InitData();
+        }
+
+        private async void RefreshAction()
+        {
+            var targetPath = EnsureOriginUrl(CurrentExplorerItem.Path);
+            targetPath += ExplorerItem.SpliterChar;
+            var subRoot = await GenerateExplorerRoot(CurrentExplorerItem.Name, targetPath);
+            if (subRoot != null && subRoot.Name== CurrentExplorerItem.Name)
+            {
+
+                var subRootChildren = subRoot.Children;
+                CurrentExplorerItem.Children.Clear();
+                foreach (var subRootChild in subRootChildren)
+                {
+                    CurrentExplorerItem.Children.Add(subRootChild);
+                }
+            }
+
+            await RefreshCurrentFileInfosAsync();
+
+
         }
 
         private async void MenuPageViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -193,21 +223,18 @@ namespace QinuFileUploader.ViewModel
             var fileInfos = await _qiniuManager.Search(_qiniuManager.Bucket, targetPath);
             var currentFileInfos = new ObservableCollectionEx<IFileInfo>(fileInfos.Where(c =>
             {
-                var result = false;
-                if (c.Type == FileInfoType.Folder)
-                {
-                    if (c.FileName.EndsWith('/') && c.FileName.Length > 1)
-                    {
-                        var fileName = c.FileName.Substring(0, c.FileName.Length - 1);
-                        result = Path.GetDirectoryName(fileName) == targetDirectoryPath;
-                    }
-                }
-                else
-                {
-                    result = Path.GetDirectoryName(c.FileName) == targetDirectoryPath;
-                }
-                return result;
+                return Path.GetDirectoryName(c.FileName) == targetDirectoryPath && c.Type == FileInfoType.File;
             }).OrderBy(c => c.Type));
+
+            foreach (var childItem in CurrentExplorerItem.Children)
+            {
+                var newModule = new QiniuFile();
+                newModule.FileName = childItem.Name;
+                newModule.SetFolderType();
+                currentFileInfos.Add(newModule);
+
+            }
+
             currentFileInfos.CollectionChanged += FileInfos_CollectionChangedAsync;
             CurrentFileInfos = currentFileInfos;
 
@@ -234,7 +261,7 @@ namespace QinuFileUploader.ViewModel
         }
 
 
-        private async void InitData(string keyword = "")
+        private async void InitData()
         {
             var storageSK = ConfigureProvider.SettingInfo.StorageAppSecret;
             if (!await Bucket(storageSK))
@@ -242,18 +269,41 @@ namespace QinuFileUploader.ViewModel
                 return;
             };
             _rootname = _qiniuManager.Bucket;
-            var fgalleryList = await _qiniuManager.Search(_qiniuManager.Bucket, keyword);
+            var root = await GenerateExplorerRoot(_qiniuManager.Bucket);
 
-            var folders = fgalleryList.Where(c => c.Type == FileInfoType.Folder).GroupBy(c => c.FileName).Select(c => c.Key).ToList();
-            folders.Add("");
+            RootExplorerItems = new ObservableCollectionEx<ExplorerItem>() { root };
 
+            NavigationHistoryStack.Add(root);
+            NavigationStack.Add(root);
+
+            CurrentExplorerItem = RootExplorerItems.FirstOrDefault();
+        }
+
+        private async Task<ExplorerItem> GenerateExplorerRoot(string rootName, string rootPath = "")
+        {
+            var fgalleryList = await _qiniuManager.Search(_qiniuManager.Bucket, rootPath);
+            var folders = fgalleryList.Where(c => c.Type == FileInfoType.Folder).GroupBy(c => c.FileName).Select(c =>
+            {
+                string result = string.IsNullOrEmpty(rootPath)
+                    ? c.Key
+                    : c.Key.StartsWith(rootPath) ? c.Key.Substring(rootPath.Length, c.Key.Length - rootPath.Length) : c.Key;
+                return result;
+            }).ToList();
+            if (string.IsNullOrEmpty(rootPath))
+            {
+                folders.Add("");
+
+            }
             var vfolders = fgalleryList
                 .Where(c => c.Type == FileInfoType.File)
                 .Select(c =>
                 {
                     var fileName = Path.GetFileName(c.FileName);
                     var folderName = c.FileName.Substring(0, c.FileName.Length - fileName.Length);
-                    return folderName;
+                    string result = string.IsNullOrEmpty(rootPath)
+                    ? folderName
+                    : folderName.StartsWith(rootPath) ? folderName.Substring(rootPath.Length, folderName.Length - rootPath.Length) : folderName;
+                    return result;
                 })
                 .Distinct()
                 .ToList();
@@ -269,7 +319,7 @@ namespace QinuFileUploader.ViewModel
             ExplorerItem root = null;
             foreach (var folder in folders)
             {
-                var trimdFolder = _rootname + ExplorerItem.SpliterChar + folder;
+                var trimdFolder = rootName + ExplorerItem.SpliterChar + folder;
                 if (trimdFolder.EndsWith(ExplorerItem.SpliterChar))
                 {
                     trimdFolder = trimdFolder.Substring(0, trimdFolder.Length - 1);
@@ -339,12 +389,7 @@ namespace QinuFileUploader.ViewModel
                 }
             }
 
-            RootExplorerItems = new ObservableCollectionEx<ExplorerItem>() { root };
-
-            NavigationHistoryStack.Add(root);
-            NavigationStack.Add(root);
-
-            CurrentExplorerItem = RootExplorerItems.FirstOrDefault();
+            return root;
         }
 
         private async void FileInfos_CollectionChangedAsync(object sender, NotifyCollectionChangedEventArgs e)
@@ -372,8 +417,7 @@ namespace QinuFileUploader.ViewModel
 
                     if (uploadResult)
                     {
-                        await RefreshCurrentFileInfosAsync();
-
+                        RefreshAction();
                     }
                     else
                     {
@@ -386,8 +430,7 @@ namespace QinuFileUploader.ViewModel
                     if (deleteResult)
                     {
                         SelectedFileInfo = null;
-                        await RefreshCurrentFileInfosAsync();
-
+                        RefreshAction();
                     }
                     break;
                 case NotifyCollectionChangedAction.Replace:

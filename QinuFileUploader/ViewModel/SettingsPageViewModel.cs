@@ -15,9 +15,11 @@ namespace QinuFileUploader.ViewModel
     public class SettingsPageViewModel : ObservableObject
     {
         public event EventHandler<EventArgs> OnSubmit;
+        public event EventHandler<EventArgs> OnReload;
         public SettingsPageViewModel()
         {
             SubmitCommand = new RelayCommand(SubmitAction, CanSubmit);
+            ReloadCommand = new RelayCommand(ReloadAction);
             PropertyChanged += SettingPageViewModel_PropertyChanged;
             SettingInfo = new SettingInfo();
             SettingInfo.StorageAppSecret = ConfigureProvider.SettingInfo.StorageAppSecret;
@@ -29,6 +31,11 @@ namespace QinuFileUploader.ViewModel
             BucketRegionSource = QiniuRegion.GetRegionList().ToList();
             SettingInfo.StorageRegion = BucketRegionSource.First(c => c.Title == ConfigureProvider.SettingInfo.StorageRegion.Title);
 
+        }
+
+        private void ReloadAction()
+        {
+            OnReload?.Invoke(this, new EventArgs());
         }
 
         private bool _hasChanged;
@@ -106,6 +113,7 @@ namespace QinuFileUploader.ViewModel
 
 
         public RelayCommand SubmitCommand { get; set; }
+        public RelayCommand ReloadCommand { get; set; }
 
     }
 }
