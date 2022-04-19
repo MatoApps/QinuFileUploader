@@ -105,7 +105,8 @@
                     IsPaneOpen="{Binding IsShowTree}" 
                     OpenPaneLength="256" 
                     CompactPaneLength="48"  
-                    PaneBackground="{ThemeResource ControlSolidFillColorDefaultBrush}"
+                    PaneBackground="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+                    Background="{ThemeResource SolidBackgroundFillColorQuarternary}"
                     DisplayMode="Inline">
             <SplitView.Pane>
                 <Grid Grid.Column="0" MinWidth="320">
@@ -190,7 +191,7 @@
                 <SplitView Grid.Row="1"
                     IsPaneOpen="{Binding IsShowDetail}" 
                     OpenPaneLength="256" 
-                    PaneBackground="{ThemeResource SolidBackgroundFillColorTertiary}"
+                    PaneBackground="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
                           DisplayMode="Inline"   
                             PanePlacement="Right"
                     CompactPaneLength="48" >
