@@ -15,6 +15,7 @@ namespace QinuFileUploader.Common
         public const string DefaultStorageAppSecret = "[请填写AppSecret]";
         public const string DefaultCallbackBody = "key=$(key)&hash=$(etag)&bucket=$(bucket)&fsize=$(fsize)";
         public const string DefaultCallbackUrl = "";
+        public const string DefaultExtensionAvailable = ".bmp|.gif|.exif|.jpg|.png|.tiff";
 
 
         public static SettingInfo SettingInfo;
@@ -30,7 +31,8 @@ namespace QinuFileUploader.Common
                     StorageAppSecret = DefaultStorageAppSecret,
                     StorageRegion = QiniuRegion.GetRegionList().First(c => c.Title == "华南"),
                     CallbackBody = DefaultCallbackBody,
-                    CallbackUrl = DefaultCallbackUrl
+                    CallbackUrl = DefaultCallbackUrl,
+                    ExtensionAvailable = DefaultExtensionAvailable
                 };
                 LocalDataHelper.SaveObjectLocal(settingInfo);
 

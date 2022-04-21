@@ -35,6 +35,18 @@
                     <ColumnDefinition Width="*"></ColumnDefinition>
                     <ColumnDefinition Width="240"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Vertical">
+                    <TextBlock Text="允许上传的内容"></TextBlock>
+                    <TextBlock Text="（以|分隔）"></TextBlock>
+                </StackPanel>
+                <TextBox Grid.Column="1" 
+                             Text="{Binding SettingInfo.ExtensionAvailable, Mode=TwoWay}"></TextBox>
+            </Grid>
+            <Grid Margin="0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="240"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
                 <TextBlock Text="Bucket地区"></TextBlock>
 
                 <ComboBox Grid.Column="1" ItemsSource="{Binding BucketRegionSource}"

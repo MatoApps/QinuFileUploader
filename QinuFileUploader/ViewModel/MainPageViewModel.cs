@@ -146,14 +146,15 @@ namespace QinuFileUploader.ViewModel
                 Content = createFolderPagePage,
                 PrimaryButtonText = "确定"
             };
+
+
+            contentDialog.XamlRoot = App.Window.Content.XamlRoot;
+            await contentDialog.ShowAsync();
             if (string.IsNullOrEmpty(folderName))
             {
                 await UIHelper.ShowAsync("不能创建名称为空的文件夹哦");
             }
 
-
-            contentDialog.XamlRoot = App.Window.Content.XamlRoot;
-            await contentDialog.ShowAsync();
             var file = "README.txt";
             var filename = CurrentExplorerItem.Path + ExplorerItem.SpliterChar + folderName + ExplorerItem.SpliterChar + file;
             var fileType = _mimeTypeManager.GetMimeType(file);
@@ -223,6 +224,8 @@ namespace QinuFileUploader.ViewModel
                 CurrentExplorerItem.Children.Clear();
                 foreach (var subRootChild in subRootChildren)
                 {
+                    subRootChild.Path = CurrentExplorerItem.Path.Substring(0, CurrentExplorerItem.Path.LastIndexOf(ExplorerItem.SpliterChar) + 1) + subRootChild.Path;
+
                     CurrentExplorerItem.Children.Add(subRootChild);
                 }
             }
@@ -517,11 +520,23 @@ namespace QinuFileUploader.ViewModel
 
         private async void AddImageAction()
         {
-
             var open = new FileOpenPicker();
             open.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-            open.FileTypeFilter.Add(".png");
-            open.FileTypeFilter.Add(".jpg");
+            var extensionAvailable = ConfigureProvider.SettingInfo.ExtensionAvailable;
+            foreach (var item in extensionAvailable.Split('|'))
+            {
+                try
+                {
+                    open.FileTypeFilter.Add(item);
+
+                }
+                catch (Exception e)
+                {
+                    await UIHelper.ShowAsync("所填写的扩展名不正确：" + item);
+                    return;
+
+                }
+            }
 
             UIHelper.InitFileOpenPicker(open);
 

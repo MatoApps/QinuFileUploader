@@ -80,6 +80,20 @@ namespace QinuFileUploader.Model
                 OnPropertyChanged(nameof(CallbackBody));
             }
         }
+        
+        private string _extensionAvailable;
+        
+        [JsonProperty("ExtensionAvailable")]
+        public string ExtensionAvailable
+        {
+            get { return _extensionAvailable; }
+            set
+            {
+                _extensionAvailable = value;
+
+                OnPropertyChanged(nameof(ExtensionAvailable));
+            }
+        }
 
 
     }

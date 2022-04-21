@@ -26,6 +26,7 @@ namespace QinuFileUploader.ViewModel
             SettingInfo.StorageAppKey = ConfigureProvider.SettingInfo.StorageAppKey;
             SettingInfo.CallbackUrl = ConfigureProvider.SettingInfo.CallbackUrl;
             SettingInfo.CallbackBody = ConfigureProvider.SettingInfo.CallbackBody;
+            SettingInfo.ExtensionAvailable = ConfigureProvider.SettingInfo.ExtensionAvailable;
             SettingInfo.PropertyChanged += SettingInfo_PropertyChanged;
 
             BucketRegionSource = QiniuRegion.GetRegionList().ToList();
