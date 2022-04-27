@@ -4,16 +4,17 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap rescap">
+  xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
+  IgnorableNamespaces="uap rescap mp">
 
   <Identity
-    Name="7e0edb37-c637-481e-878f-d3a8f8c8b486"
-    Publisher="CN=Xamarin"
+    Name="27272linxiao.233739FB0E5C4"
+    Publisher="CN=66CEE570-ACBF-4104-8CBB-C23C997CC5A8"
     Version="1.0.0.0" />
 
   <Properties>
-    <DisplayName>QinuFileUploader</DisplayName>
-    <PublisherDisplayName>Xamarin</PublisherDisplayName>
+    <DisplayName>七牛云管家</DisplayName>
+    <PublisherDisplayName>linxiao</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -31,7 +32,7 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="QinuFileUploader"
+        DisplayName="七牛云管家"
         Description="QinuFileUploader"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
@@ -45,4 +46,6 @@
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
   </Capabilities>
+
+  <mp:PhoneIdentity PhoneProductId="6c661db0-73f1-4787-8e48-7699b1568aee" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 </Package>

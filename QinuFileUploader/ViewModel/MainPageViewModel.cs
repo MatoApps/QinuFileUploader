@@ -214,6 +214,11 @@ namespace QinuFileUploader.ViewModel
 
         private async void RefreshAction()
         {
+            if (CurrentExplorerItem == null)
+            {
+                return;
+            }
+
             var targetPath = EnsureOriginUrl(CurrentExplorerItem.Path);
             targetPath += ExplorerItem.SpliterChar;
             var subRoot = await GenerateExplorerRoot(CurrentExplorerItem.Name, targetPath);
